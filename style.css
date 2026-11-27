@@ -2664,38 +2664,613 @@ label {
 
 
 
-/* FORGOT PASSWORD + PASSWORD RESET */
-.forgot-password-link {
-    display: block;
-    width: 100%;
-    margin: 7px 0 0;
-    padding: 8px 10px;
-    font-size: 13px;
-    color: var(--purple-dark);
-    text-decoration: underline;
-    text-underline-offset: 3px;
+
+/* =========================================================
+   OUR LITTLE STORY — DIARY / SCRAPBOOK THEME
+   Warm paper, spiral binding, handwritten accents and doodles.
+   Global contrast rules prevent white text on white surfaces.
+========================================================= */
+
+:root {
+  --diary-ink: #30251f;
+  --diary-ink-soft: #55443a;
+  --diary-paper: #f1e6d2;
+  --diary-paper-light: #fbf4e8;
+  --diary-paper-edge: #d7c5a8;
+  --diary-walnut: #392b25;
+  --diary-leather: #594234;
+  --diary-gold: #b18b58;
+  --diary-muted: #756253;
+  --diary-burgundy: #70464a;
+  --diary-green: #52604d;
 }
-.forgot-password-link:hover,
-.text-btn:hover {
-    color: var(--purple);
+
+/* Background: warm desk / paper rather than flat white */
+html, body {
+  background-color: #29221f !important;
+  color: var(--diary-paper) !important;
 }
-#resetPasswordScreen .auth-card {
-    max-width: 440px;
+
+/* Main app surfaces become layered diary pages */
+main, .main-content, .content, .app-container, .container,
+.page, .tab-content, .section-content, .panel, .content-wrapper {
+  color: var(--diary-ink);
 }
-#resetPasswordScreen .subtitle {
-    margin-bottom: 22px;
+
+/* Diary-paper cards and panels */
+.card, .memory-card, .journal-card, .story-card, .entry-card,
+.character-card, .character-profile, .character-item,
+.profile-card, .profile-item, .message-card, .note-card,
+.modal-content, .dialog-content, .form-card {
+  background-color: var(--diary-paper) !important;
+  color: var(--diary-ink) !important;
+  border: 1px solid var(--diary-paper-edge) !important;
+  box-shadow: 0 7px 18px rgba(18, 12, 8, .22) !important;
 }
-#resetPasswordMessage {
-    overflow-wrap: anywhere;
+
+/* Make headings and normal copy on paper dark and readable */
+.card *, .memory-card *, .journal-card *, .story-card *,
+.entry-card *, .character-card *, .character-profile *,
+.character-item *, .profile-card *, .profile-item *,
+.message-card *, .note-card *, .modal-content *,
+.dialog-content *, .form-card * {
+  color: var(--diary-ink) !important;
+  -webkit-text-fill-color: var(--diary-ink) !important;
 }
-@media (max-width: 520px) {
-    .auth-card {
-        padding: 30px 22px;
-    }
-    .auth-card h1 {
-        font-size: 29px;
-    }
-    .forgot-password-link {
-        min-height: 42px;
-    }
+
+/* Main diary page look: ruled-paper texture and soft rounded corners */
+.journal, .journal-page, .diary-page, .story-page, .memory-page,
+#journal, #story, #memories, #characters {
+  background-color: var(--diary-paper) !important;
+  color: var(--diary-ink) !important;
+  background-image:
+    linear-gradient(90deg, transparent 0 42px, rgba(166, 91, 79, .20) 42px 44px, transparent 44px),
+    repeating-linear-gradient(to bottom, transparent 0 31px, rgba(103, 128, 151, .18) 31px 32px) !important;
+  border: 1px solid var(--diary-paper-edge) !important;
+  border-radius: 12px !important;
+}
+
+/* Spiral binding decoration for diary-like page containers */
+.journal-page, .diary-page, .journal, #journal, .story-page {
+  position: relative;
+  padding-left: clamp(34px, 5vw, 62px) !important;
+}
+.journal-page::before, .diary-page::before, .journal::before,
+#journal::before, .story-page::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  left: 14px;
+  top: 16px;
+  bottom: 16px;
+  width: 18px;
+  background:
+    radial-gradient(ellipse at center, transparent 0 5px, #82715f 5.5px 7px, transparent 7.5px)
+    center top / 18px 34px repeat-y;
+  pointer-events: none;
+  opacity: .9;
+}
+
+/* Paperclip / tape / scrapbook details */
+.memory-card, .journal-card, .story-card, .note-card {
+  position: relative;
+  border-radius: 5px !important;
+}
+.memory-card::before, .journal-card::before, .story-card::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 42%;
+  width: 58px;
+  height: 16px;
+  background: rgba(190, 163, 119, .48);
+  transform: rotate(-3deg);
+  pointer-events: none;
+}
+
+/* Random doodle accents using CSS line-art; decorative only */
+body::after {
+  content: "✦   ☾     ♡       ✧       ☆";
+  position: fixed;
+  right: 18px;
+  bottom: 14px;
+  z-index: 0;
+  color: rgba(225, 202, 164, .28);
+  font-family: Georgia, serif;
+  font-size: 19px;
+  letter-spacing: 9px;
+  pointer-events: none;
+  transform: rotate(-8deg);
+}
+h1::after, h2::after {
+  content: "  ✧";
+  color: var(--diary-gold);
+  font-size: .72em;
+}
+
+/* Global controls: every tab, including Edit/Delete/Save/Cancel */
+button, input[type="button"], input[type="submit"], input[type="reset"],
+.btn, .button, .action-btn, .action-button, [role="button"] {
+  background: var(--diary-leather) !important;
+  background-color: var(--diary-leather) !important;
+  color: #fff2df !important;
+  -webkit-text-fill-color: #fff2df !important;
+  border: 1px solid var(--diary-gold) !important;
+  box-shadow: 0 2px 5px rgba(25, 16, 10, .18) !important;
+}
+button *, .btn *, .button *, .action-btn *, .action-button *,
+[role="button"] * {
+  color: #fff2df !important;
+  -webkit-text-fill-color: #fff2df !important;
+  fill: currentColor !important;
+}
+button:hover, .btn:hover, .button:hover, .action-btn:hover,
+.action-button:hover, [role="button"]:hover {
+  background: #765a43 !important;
+  background-color: #765a43 !important;
+  color: #fffaf1 !important;
+  -webkit-text-fill-color: #fffaf1 !important;
+  border-color: #d1b17e !important;
+}
+button.delete, .delete-btn, .delete-button, [class*="delete"],
+button[aria-label*="delete" i] {
+  background: var(--diary-burgundy) !important;
+  background-color: var(--diary-burgundy) !important;
+  color: #fff2e9 !important;
+  -webkit-text-fill-color: #fff2e9 !important;
+  border-color: #b78378 !important;
+}
+
+/* Form fields: pale paper with dark typed text */
+input:not([type="button"]):not([type="submit"]):not([type="reset"]),
+textarea, select {
+  background-color: var(--diary-paper-light) !important;
+  color: var(--diary-ink) !important;
+  -webkit-text-fill-color: var(--diary-ink) !important;
+  border: 1px solid var(--diary-paper-edge) !important;
+}
+input::placeholder, textarea::placeholder {
+  color: var(--diary-muted) !important;
+  -webkit-text-fill-color: var(--diary-muted) !important;
+}
+
+/* Generic surfaces that were previously white with white text */
+[style*="background: white"], [style*="background-color: white"],
+[style*="background:#fff"], [style*="background: #fff"],
+[style*="background-color:#fff"], [style*="background-color: #fff"] {
+  background-color: var(--diary-paper) !important;
+  color: var(--diary-ink) !important;
+}
+[style*="color: white"], [style*="color:#fff"], [style*="color: #fff"] {
+  color: var(--diary-ink) !important;
+  -webkit-text-fill-color: var(--diary-ink) !important;
+}
+
+/* Avoid accidental white-on-white on common content elements */
+article, section, .tab-pane, .tab-panel, .tab-content,
+.dropdown-menu, .menu, .popover, .tooltip {
+  color: var(--diary-ink);
+}
+article h1, article h2, article h3, article p,
+section h1, section h2, section h3, section p,
+.tab-pane h1, .tab-pane h2, .tab-pane h3, .tab-pane p,
+.tab-panel h1, .tab-panel h2, .tab-panel h3, .tab-panel p,
+.tab-content h1, .tab-content h2, .tab-content h3, .tab-content p {
+  color: var(--diary-ink);
+}
+
+/* Keep the overall site title / navigation in warm ink or parchment */
+header, nav, .navbar, .sidebar {
+  color: var(--diary-paper) !important;
+}
+header a, nav a, .navbar a, .sidebar a {
+  color: var(--diary-paper) !important;
+}
+
+
+
+
+/* =========================================================
+   GLOBAL CONTRAST REPAIR — ALL TABS
+   Rule: parchment surfaces use dark ink; dark controls use ivory.
+   This block intentionally comes last to override older theme rules.
+========================================================= */
+
+:root {
+  --fix-paper: #f3e8d5;
+  --fix-paper-light: #fbf4e9;
+  --fix-ink: #30251f;
+  --fix-ink-soft: #57463a;
+  --fix-muted: #705f50;
+  --fix-leather: #49372d;
+  --fix-leather-hover: #604837;
+  --fix-ivory: #fff4e4;
+  --fix-gold: #b18b58;
+  --fix-burgundy: #704047;
+  --fix-border: #c8b18f;
+}
+
+/* Page canvas stays dark; headings and helper copy remain light on it. */
+html, body, .app-layout {
+  background-color: #29221f !important;
+}
+.page {
+  color: var(--fix-ivory) !important;
+}
+.page > .page-heading,
+.page > .page-heading *,
+.page-heading h1, .page-heading h2, .page-heading h3,
+.page-subtitle, .eyebrow, .little-note {
+  color: #f2e5d2 !important;
+}
+
+/* Every content card is a paper surface with dark, readable ink. */
+.story-card, .memory-card, .character-card, .screenshot-card,
+.journal-card, .home-card, .empty-state,
+#storyList > article, #memoryGrid > article, #charactersGrid > article,
+#characterGrid > article, #screenshotsGrid > article,
+#journalList > article {
+  background: var(--fix-paper) !important;
+  background-color: var(--fix-paper) !important;
+  color: var(--fix-ink) !important;
+  border: 1px solid var(--fix-border) !important;
+  box-shadow: 0 7px 18px rgba(18,12,8,.22) !important;
+}
+
+/* Force all text inside paper cards to ink, including dates and nested spans. */
+.story-card *, .memory-card *, .character-card *,
+.screenshot-card *, .journal-card *, .home-card *,
+.empty-state *,
+#storyList > article *, #memoryGrid > article *,
+#charactersGrid > article *, #characterGrid > article *,
+#screenshotsGrid > article *, #journalList > article * {
+  color: var(--fix-ink) !important;
+  -webkit-text-fill-color: var(--fix-ink) !important;
+}
+.story-card h1, .story-card h2, .story-card h3,
+.memory-card h1, .memory-card h2, .memory-card h3,
+.character-card h1, .character-card h2, .character-card h3,
+.screenshot-card h1, .screenshot-card h2, .screenshot-card h3,
+.journal-card h1, .journal-card h2, .journal-card h3 {
+  color: #49352c !important;
+  -webkit-text-fill-color: #49352c !important;
+}
+.story-card p, .memory-card p, .character-card p,
+.screenshot-card p, .journal-card p,
+.story-number, .memory-date, .journal-date, .character-role,
+.screenshot-card time, .screenshot-card-caption {
+  color: var(--fix-ink-soft) !important;
+  -webkit-text-fill-color: var(--fix-ink-soft) !important;
+}
+
+/* Diary paper effect on timeline and memory/profile cards. */
+.story-card, .memory-card, .character-card, .journal-card {
+  border-radius: 7px !important;
+  position: relative;
+}
+.story-card, .journal-card {
+  background-image:
+    repeating-linear-gradient(to bottom, transparent 0 31px, rgba(103,128,151,.12) 31px 32px),
+    linear-gradient(var(--fix-paper), var(--fix-paper)) !important;
+}
+
+/* Action controls: dark leather + ivory text in every tab and modal. */
+button, input[type="button"], input[type="submit"], input[type="reset"],
+.btn, .button, .action-btn, .action-button, .tiny-btn, .tool-btn,
+[role="button"] {
+  background: var(--fix-leather) !important;
+  background-color: var(--fix-leather) !important;
+  color: var(--fix-ivory) !important;
+  -webkit-text-fill-color: var(--fix-ivory) !important;
+  border: 1px solid var(--fix-gold) !important;
+}
+button *, .btn *, .button *, .action-btn *, .action-button *,
+.tiny-btn *, .tool-btn *, [role="button"] * {
+  color: var(--fix-ivory) !important;
+  -webkit-text-fill-color: var(--fix-ivory) !important;
+}
+button:hover, .btn:hover, .button:hover, .action-btn:hover,
+.action-button:hover, .tiny-btn:hover, .tool-btn:hover,
+[role="button"]:hover {
+  background: var(--fix-leather-hover) !important;
+  background-color: var(--fix-leather-hover) !important;
+  color: #fffaf2 !important;
+  -webkit-text-fill-color: #fffaf2 !important;
+}
+button.delete, .delete-btn, .delete-button,
+.action-btn.delete, [class*="delete"] {
+  background: var(--fix-burgundy) !important;
+  background-color: var(--fix-burgundy) !important;
+  color: #fff0e8 !important;
+  -webkit-text-fill-color: #fff0e8 !important;
+  border-color: #b78378 !important;
+}
+
+/* Forms are light paper fields with dark entered text and placeholders. */
+input:not([type="button"]):not([type="submit"]):not([type="reset"]),
+textarea, select, option {
+  background: var(--fix-paper-light) !important;
+  background-color: var(--fix-paper-light) !important;
+  color: var(--fix-ink) !important;
+  -webkit-text-fill-color: var(--fix-ink) !important;
+  border: 1px solid var(--fix-border) !important;
+}
+input::placeholder, textarea::placeholder {
+  color: var(--fix-muted) !important;
+  -webkit-text-fill-color: var(--fix-muted) !important;
+  opacity: 1 !important;
+}
+label, .form-label {
+  color: var(--fix-ink) !important;
+  -webkit-text-fill-color: var(--fix-ink) !important;
+}
+
+/* Modals/dialogs use parchment too, so their labels and headings stay legible. */
+.modal-content, .modal-card, .dialog-content, .form-card,
+#modalContent {
+  background: var(--fix-paper) !important;
+  background-color: var(--fix-paper) !important;
+  color: var(--fix-ink) !important;
+  border: 1px solid var(--fix-border) !important;
+}
+.modal-content *, .modal-card *, .dialog-content *,
+.form-card *, #modalContent * {
+  color: var(--fix-ink) !important;
+  -webkit-text-fill-color: var(--fix-ink) !important;
+}
+.modal-content button, .modal-card button, .dialog-content button,
+.form-card button, #modalContent button {
+  background: var(--fix-leather) !important;
+  color: var(--fix-ivory) !important;
+  -webkit-text-fill-color: var(--fix-ivory) !important;
+}
+.modal-content button.delete, .modal-card button.delete,
+#modalContent button.delete {
+  background: var(--fix-burgundy) !important;
+  color: #fff0e8 !important;
+  -webkit-text-fill-color: #fff0e8 !important;
+}
+
+/* Chat messages retain readable contrast on both sides. */
+.chat-box, .messages {
+  background: #302720 !important;
+  color: var(--fix-ivory) !important;
+}
+.message-bubble, .chat-message, .received-message {
+  background: #493b30 !important;
+  color: var(--fix-ivory) !important;
+}
+.sent-message {
+  background: #70464a !important;
+  color: #fff4ec !important;
+}
+.message-bubble *, .chat-message *, .received-message *, .sent-message * {
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+/* Navigation sits on the dark desk background. */
+.sidebar, .topbar {
+  background: #332922 !important;
+  color: var(--fix-ivory) !important;
+}
+.sidebar *, .topbar * {
+  color: var(--fix-ivory) !important;
+}
+.nav-btn.active {
+  background: #66513e !important;
+  color: #fff4e4 !important;
+}
+
+/* Doodle canvas stays light; drawing controls remain dark and readable. */
+.canvas-wrapper, canvas {
+  background-color: #fbf4e9;
+}
+.tool-btn.active {
+  background: var(--fix-gold) !important;
+  color: var(--fix-ink) !important;
+  -webkit-text-fill-color: var(--fix-ink) !important;
+}
+
+/* Keep disabled controls legible without making them look active. */
+button:disabled, input:disabled, textarea:disabled, select:disabled {
+  opacity: .65;
+}
+
+
+
+/* FINAL OVERRIDE: EDIT / DELETE ACTION BUTTONS IN ALL CONTENT CARDS
+   Explicit values + high-specificity selectors prevent older theme rules
+   and dark-mode rules from reintroducing dark text. */
+html body button.action-btn,
+html body .card-actions button.action-btn,
+html body article button.action-btn,
+html body .story-card button.action-btn,
+html body .memory-card button.action-btn,
+html body .character-card button.action-btn,
+html body .screenshot-card button.action-btn,
+html body .journal-card button.action-btn {
+  background: #49372d !important;
+  background-color: #49372d !important;
+  color: #fff4e4 !important;
+  -webkit-text-fill-color: #fff4e4 !important;
+  border: 1px solid #c2a16f !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+html body button.action-btn *,
+html body .card-actions button.action-btn *,
+html body article button.action-btn * {
+  color: #fff4e4 !important;
+  -webkit-text-fill-color: #fff4e4 !important;
+  text-shadow: none !important;
+}
+
+/* Delete is distinct but still has high-contrast light lettering. */
+html body button.action-btn.delete,
+html body .card-actions button.action-btn.delete,
+html body article button.action-btn.delete,
+html body .story-card button.action-btn.delete,
+html body .memory-card button.action-btn.delete,
+html body .character-card button.action-btn.delete,
+html body .screenshot-card button.action-btn.delete,
+html body .journal-card button.action-btn.delete {
+  background: #704047 !important;
+  background-color: #704047 !important;
+  color: #fff4ec !important;
+  -webkit-text-fill-color: #fff4ec !important;
+  border: 1px solid #c18a80 !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+html body button.action-btn.delete *,
+html body .card-actions button.action-btn.delete *,
+html body article button.action-btn.delete * {
+  color: #fff4ec !important;
+  -webkit-text-fill-color: #fff4ec !important;
+}
+
+/* Preserve contrast while hovering or keyboard-focusing. */
+html body button.action-btn:hover,
+html body .card-actions button.action-btn:hover {
+  background: #604837 !important;
+  background-color: #604837 !important;
+  color: #fffaf2 !important;
+  -webkit-text-fill-color: #fffaf2 !important;
+}
+html body button.action-btn.delete:hover,
+html body .card-actions button.action-btn.delete:hover {
+  background: #87515a !important;
+  background-color: #87515a !important;
+  color: #fffaf2 !important;
+  -webkit-text-fill-color: #fffaf2 !important;
+}
+html body button.action-btn:focus-visible {
+  outline: 2px solid #e4c58f !important;
+  outline-offset: 2px !important;
+}
+
+
+
+/* LAST-RESORT CONTRAST OVERRIDES for card actions and edit dialogs */
+html body button.action-btn,
+html body button.action-btn:not(:disabled),
+html body .card-actions > button,
+html body article .card-actions > button {
+  background-color: #49372d !important;
+  background-image: none !important;
+  color: #fff4e4 !important;
+  -webkit-text-fill-color: #fff4e4 !important;
+  border: 1px solid #c2a16f !important;
+  text-shadow: none !important;
+}
+html body button.action-btn.delete,
+html body .card-actions > button.delete,
+html body article .card-actions > button.delete {
+  background-color: #704047 !important;
+  background-image: none !important;
+  color: #fff4ec !important;
+  -webkit-text-fill-color: #fff4ec !important;
+  border-color: #c18a80 !important;
+}
+
+/* The whole edit dialog and all fields use paper + dark ink. */
+html body .modal,
+html body .modal #modalContent,
+html body #modalContent {
+  background-color: #f3e8d5 !important;
+  color: #30251f !important;
+  border-color: #c8b18f !important;
+}
+html body .modal h1,
+html body .modal h2,
+html body .modal h3,
+html body .modal label,
+html body .modal p,
+html body #modalContent h1,
+html body #modalContent h2,
+html body #modalContent h3,
+html body #modalContent label,
+html body #modalContent p {
+  color: #30251f !important;
+  -webkit-text-fill-color: #30251f !important;
+}
+html body .modal input:not([type="checkbox"]):not([type="radio"]),
+html body .modal textarea,
+html body .modal select,
+html body #modalContent input:not([type="checkbox"]):not([type="radio"]),
+html body #modalContent textarea,
+html body #modalContent select {
+  background-color: #fffaf1 !important;
+  color: #30251f !important;
+  -webkit-text-fill-color: #30251f !important;
+  border: 1px solid #bda887 !important;
+  caret-color: #30251f !important;
+}
+html body .modal input::placeholder,
+html body .modal textarea::placeholder,
+html body #modalContent input::placeholder,
+html body #modalContent textarea::placeholder {
+  color: #756253 !important;
+  -webkit-text-fill-color: #756253 !important;
+  opacity: 1 !important;
+}
+html body .modal #modalContent button,
+html body #modalContent button.primary-btn {
+  background-color: #49372d !important;
+  color: #fff4e4 !important;
+  -webkit-text-fill-color: #fff4e4 !important;
+}
+
+
+
+/* MOBILE-FIRST NAVIGATION & TOUCH IMPROVEMENTS */
+@media (max-width: 900px) {
+  .app-layout { display:block; padding:10px 10px 18px; }
+  .sidebar { position:sticky; top:0; z-index:50; display:flex; flex-wrap:nowrap; overflow-x:auto; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch; scrollbar-width:thin; gap:7px; padding:8px; margin:0 0 14px; border-radius:16px; }
+  .nav-btn { flex:0 0 auto; width:auto; min-width:92px; min-height:46px; padding:8px 11px; display:inline-flex; align-items:center; justify-content:center; gap:7px; font-size:12px; white-space:nowrap; }
+  .nav-btn span { font-size:17px; width:auto; }
+  .sidebar-bottom { display:none; }
+  .content { min-width:0; padding:12px 8px 35px; }
+}
+@media (max-width: 600px) {
+  html { -webkit-text-size-adjust:100%; }
+  body { overflow-x:hidden; }
+  .topbar { min-height:60px; padding:10px 13px; gap:8px; flex-wrap:wrap; }
+  .brand { font-size:21px; }
+  .room-info { margin-left:auto; flex-wrap:wrap; justify-content:flex-end; }
+  .tiny-btn { min-height:38px; padding:8px 10px; font-size:12px; }
+  .app-layout { padding:7px 7px 10px; }
+  .sidebar { position:fixed; top:auto; bottom:0; left:0; right:0; z-index:1000; margin:0; padding:7px 5px calc(7px + env(safe-area-inset-bottom)); border-radius:16px 16px 0 0; border:1px solid rgba(150,155,190,.28); box-shadow:0 -8px 28px rgba(8,12,30,.22); background:rgba(29,32,61,.97); backdrop-filter:blur(16px); gap:2px; justify-content:space-around; overflow-x:auto; scrollbar-width:none; }
+  .sidebar::-webkit-scrollbar { display:none; }
+  .nav-btn { flex:1 0 0; min-width:0; max-width:92px; min-height:54px; padding:5px 2px; border-radius:11px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:2px; font-size:9px; line-height:1.15; white-space:normal; text-align:center; }
+  .nav-btn span { font-size:18px; line-height:1; }
+  .content { padding:8px 7px calc(90px + env(safe-area-inset-bottom)); }
+  .page { min-width:0; }
+  .page-heading { gap:12px; }
+  .page-heading h2 { font-size:clamp(25px, 7vw, 34px); }
+  .home-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+  .home-card { min-width:0; min-height:158px; padding:13px 11px; }
+  .home-card h3 { font-size:clamp(19px, 5vw, 24px); overflow-wrap:anywhere; }
+  .home-card p { font-size:11px; line-height:1.4; }
+  .home-card b { font-size:9px; }
+  .home-feature-card { min-width:0; }
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select { max-width:100%; font-size:16px; }
+  button, .primary-btn, .secondary-btn, .action-btn, .tool-btn { min-height:40px; touch-action:manipulation; }
+  .doodle-toolbar { width:100%; gap:12px; }
+  .tool-group { max-width:100%; flex-wrap:wrap; }
+  .canvas-wrapper { width:100%; max-width:100%; height:52vh; min-height:280px; }
+  #doodleCanvas { max-width:100%; touch-action:none; }
+  .chat-bubble { max-width:88%; overflow-wrap:anywhere; }
+  .modal, .modal-content, #modalContent { width:min(94vw, 620px); max-height:86dvh; overflow-y:auto; }
+  .memory-grid { grid-template-columns:minmax(0,1fr); }
+  .photo-lightbox { padding:56px 8px 16px; }
+}
+@media (max-width: 380px) {
+  .brand { font-size:19px; }
+  .home-grid { gap:7px; }
+  .home-card { padding:11px 9px; }
+  .nav-btn { font-size:8px; }
 }

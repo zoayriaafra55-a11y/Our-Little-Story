@@ -79,14 +79,6 @@
                 Enter our little world ♡
             </button>
 
-            <button
-                class="text-btn forgot-password-link"
-                type="button"
-                onclick="sendPasswordReset()"
-            >
-                Forgot your password?
-            </button>
-
         </div>
 
 
@@ -124,30 +116,6 @@
 
     </div>
 
-</div>
-
-<!-- =====================================================
-     PASSWORD RESET
-===================================================== -->
-<div id="resetPasswordScreen" class="screen hidden">
-    <div class="auth-card">
-        <div class="tiny-star">✦</div>
-        <h1>New password</h1>
-        <p class="subtitle">A fresh key to our little world. Choose a new password below ♡</p>
-
-        <div id="resetPasswordForm">
-            <input id="newPassword" type="password" autocomplete="new-password"
-                placeholder="New password (at least 6 characters)">
-            <input id="confirmNewPassword" type="password" autocomplete="new-password"
-                placeholder="Confirm new password">
-            <button class="primary-btn" type="button" onclick="saveNewPassword()">
-                Save new password ♡
-            </button>
-        </div>
-
-        <p id="resetPasswordMessage" class="message" aria-live="polite"></p>
-        <button class="text-btn" type="button" onclick="returnToLogin()">Back to login</button>
-    </div>
 </div>
 
 
@@ -301,15 +269,6 @@
 
             <button
                 class="nav-btn"
-                data-page="screenshots"
-                onclick="navigate('screenshots')"
-            >
-                <span>▣</span>
-                Screenshots
-            </button>
-
-            <button
-                class="nav-btn"
                 data-page="journal"
                 onclick="navigate('journal')"
             >
@@ -384,7 +343,7 @@
                     </article>
                     <aside class="home-side-stack">
                         <div class="polaroid-note"><div class="polaroid-art">A + H <span>✦</span></div><p>our favourite ongoing<br><strong>side quest.</strong></p><small>no end credits, please</small></div>
-                        <div class="tiny-manifesto"><span>HOUSE RULES</span><p>be silly. be honest.<br>save the screenshots.<br>always pick each other.</p><b>♡</b></div>
+                        <div class="tiny-manifesto"><span>HOUSE RULES</span><p>be silly. be honest.<br>keep the little things.<br>always pick each other.</p><b>♡</b></div>
                     </aside>
                 </div>
 
@@ -392,7 +351,6 @@
                 <div class="home-grid">
                     <div class="home-card card-story" onclick="navigate('story')"><span class="card-icon">✷</span><small>01 / THE LORE</small><h3>Our Story</h3><p>Every chapter, in the order it happened.</p><b>OPEN CHAPTERS ↗</b></div>
                     <div class="home-card card-memories" onclick="navigate('memories')"><span class="card-icon">▧</span><small>02 / THE CAMERA ROLL</small><h3>Memories</h3><p>Proof that the little things are the big things.</p><b>OPEN THE ALBUM ↗</b></div>
-                    <div class="home-card card-screenshots" onclick="navigate('screenshots')"><span class="card-icon">⌁</span><small>03 / CLASSIFIED</small><h3>Screenshots</h3><p>Receipts, out-of-context gems and evidence.</p><b>ENTER THE VAULT ↗</b></div>
                     <div class="home-card card-journal" onclick="navigate('journal')"><span class="card-icon">✎</span><small>04 / UNSENT THOUGHTS</small><h3>Journal</h3><p>Letters to the future versions of us.</p><b>TURN THE PAGE ↗</b></div>
                     <div class="home-card card-doodle" onclick="navigate('doodle')"><span class="card-icon">〰</span><small>05 / ARTISTIC GENIUS</small><h3>Doodle Together</h3><p>Our shared masterpiece. Allegedly.</p><b>MAKE A MESS ↗</b></div>
                     <div class="home-card card-chat" onclick="navigate('chat')"><span class="card-icon">☏</span><small>06 / THE GROUP CHAT</small><h3>Chat</h3><p>Because apparently we don't talk enough.</p><b>SAY SOMETHING ↗</b></div>
@@ -460,34 +418,6 @@
                     class="memory-grid"
                 ></div>
 
-            </section>
-
-
-            <!-- PRIVATE SCREENSHOTS -->
-            <section id="page-screenshots" class="page">
-                <div class="page-heading">
-                    <div>
-                        <p class="eyebrow">JUST BETWEEN US</p>
-                        <h2>Our Screenshots</h2>
-                    </div>
-                </div>
-                <div id="screenshotsLock" class="screenshots-lock">
-                    <div class="lock-illustration">♡</div>
-                    <p class="eyebrow">A LITTLE PRIVATE CORNER</p>
-                    <h3>Some things are just ours.</h3>
-                    <p>Enter the password to open our collection of screenshots.</p>
-                    <input id="screenshotsPassword" type="password" autocomplete="current-password" placeholder="Our little password" onkeydown="if(event.key==='Enter') unlockScreenshots()">
-                    <button class="primary-btn" type="button" onclick="unlockScreenshots()">Unlock our corner ♡</button>
-                    <p id="screenshotsLockMessage" class="lock-message" aria-live="polite"></p>
-                </div>
-                <div id="screenshotsContent" class="hidden">
-                    <div class="screenshots-toolbar">
-                        <p>Funny messages, silly moments, and things we never want to lose.</p>
-                        <button class="primary-btn small" type="button" onclick="document.getElementById('screenshotsFiles').click()">+ Add screenshots</button>
-                        <input id="screenshotsFiles" class="hidden" type="file" accept="image/*" multiple onchange="uploadScreenshots(this.files)">
-                    </div>
-                    <div id="screenshotsGrid" class="screenshots-grid"></div>
-                </div>
             </section>
 
 

@@ -14,12 +14,6 @@ const SUPABASE_URL = "https://edhycsnaexlixgujqwvj.supabase.co";
 
 const SUPABASE_KEY = "sb_publishable_8iQAzI21l4orCRp2A48U2w_AP_4_B5A";
 
-// Change this to the password you want for the Screenshots page.
-// This is a convenience lock only; see README for proper private-data security.
-const SCREENSHOTS_PASSWORD = "change-this-password";
-let screenshotsUnlocked = false;
-
-
 const supabaseClient =
     window.supabase.createClient(
         SUPABASE_URL,
@@ -72,41 +66,43 @@ document.addEventListener(
 
 async function initialize() {
 
-    const isPasswordRecovery =
-        window.location.hash.includes("type=recovery") ||
-        new URLSearchParams(window.location.search).get("reset-password") === "1";
-
-    if (isPasswordRecovery) {
-        showScreen("resetPasswordScreen");
-    } else {
-        const {
-            data: {
-                session
-            }
-        } = await supabaseClient.auth.getSession();
-
-        if (session) {
-            currentUser = session.user;
-            await afterLogin();
-        } else {
-            showScreen("authScreen");
+    const {
+        data: {
+            session
         }
+    } = await supabaseClient.auth.getSession();
+
+
+    if (session) {
+
+        currentUser = session.user;
+
+        await afterLogin();
+
+    } else {
+
+        showScreen("authScreen");
+
     }
+
 
     supabaseClient.auth.onAuthStateChange(
         async (event, session) => {
-            if (event === "PASSWORD_RECOVERY") {
-                showScreen("resetPasswordScreen");
-                return;
-            }
 
             if (session) {
+
                 currentUser = session.user;
+
             } else {
+
                 currentUser = null;
+
                 currentRoom = null;
+
                 showScreen("authScreen");
+
             }
+
         }
     );
 }
@@ -350,83 +346,6 @@ async function login() {
     currentUser = data.user;
 
     await afterLogin();
-}
-
-
-async function sendPasswordReset() {
-    const email = document.getElementById("loginEmail").value.trim();
-
-    if (!email) {
-        showMessage("authMessage", "Enter your account email first, then tap Forgot your password? ♡");
-        document.getElementById("loginEmail").focus();
-        return;
-    }
-
-    showMessage("authMessage", "Sending your password-reset link...");
-
-    const redirectTo = window.location.origin + window.location.pathname + "?reset-password=1";
-
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-        redirectTo
-    });
-
-    if (error) {
-        showMessage("authMessage", "Couldn't send the reset email: " + error.message);
-        return;
-    }
-
-    showMessage(
-        "authMessage",
-        "If an account exists for that email, a password-reset link is on its way. Check your inbox and spam folder ♡"
-    );
-}
-
-
-async function saveNewPassword() {
-    const password = document.getElementById("newPassword").value;
-    const confirmation = document.getElementById("confirmNewPassword").value;
-
-    if (!password || !confirmation) {
-        showMessage("resetPasswordMessage", "Please fill in both password fields.");
-        return;
-    }
-
-    if (password.length < 6) {
-        showMessage("resetPasswordMessage", "Your password needs at least 6 characters.");
-        return;
-    }
-
-    if (password !== confirmation) {
-        showMessage("resetPasswordMessage", "Those passwords don't match. Try again ♡");
-        return;
-    }
-
-    showMessage("resetPasswordMessage", "Updating your password...");
-
-    const { error } = await supabaseClient.auth.updateUser({
-        password
-    });
-
-    if (error) {
-        showMessage("resetPasswordMessage", "Couldn't update your password: " + error.message);
-        return;
-    }
-
-    document.getElementById("newPassword").value = "";
-    document.getElementById("confirmNewPassword").value = "";
-    showMessage("resetPasswordMessage", "Password updated! You can now log in with your new password ♡");
-
-    // Clear the recovery tokens from the address bar after a successful update.
-    window.history.replaceState({}, document.title, window.location.pathname);
-}
-
-
-function returnToLogin() {
-    window.history.replaceState({}, document.title, window.location.pathname);
-    document.getElementById("newPassword").value = "";
-    document.getElementById("confirmNewPassword").value = "";
-    showScreen("authScreen");
-    showAuth("login");
 }
 
 
@@ -774,7 +693,6 @@ function showInviteCode() {
 
 function navigate(page) {
 
-    if (page !== "screenshots") screenshotsUnlocked = false;
     document
         .querySelectorAll(".page")
         .forEach(section => {
@@ -820,7 +738,6 @@ function navigate(page) {
         setTimeout(scrollMessagesToBottom, 50);
     }
 
-    if (page === "screenshots" && screenshotsUnlocked) loadScreenshots();
 }
 
 
@@ -1112,72 +1029,6 @@ async function deleteStory(id) {
     await loadStory();
 
     showToast("Chapter deleted.");
-}
-
-
-/* =========================================================
-   PRIVATE SCREENSHOTS
-========================================================= */
-
-function unlockScreenshots() {
-    const entered = document.getElementById("screenshotsPassword").value;
-    const message = document.getElementById("screenshotsLockMessage");
-    if (entered !== SCREENSHOTS_PASSWORD || SCREENSHOTS_PASSWORD === "change-this-password") {
-        message.textContent = SCREENSHOTS_PASSWORD === "change-this-password"
-            ? "Set your own password in script.js first."
-            : "That isn't quite right. Try again ♡";
-        return;
-    }
-    screenshotsUnlocked = true;
-    document.getElementById("screenshotsLock").classList.add("hidden");
-    document.getElementById("screenshotsContent").classList.remove("hidden");
-    loadScreenshots();
-}
-
-async function loadScreenshots() {
-    if (!screenshotsUnlocked || !currentRoom) return;
-    const grid = document.getElementById("screenshotsGrid");
-    grid.innerHTML = '<p class="page-subtitle">Gathering our little moments...</p>';
-    const { data, error } = await supabaseClient.from("screenshots")
-        .select("*").eq("room_id", currentRoom.id).order("created_at", { ascending: false });
-    if (error) {
-        grid.innerHTML = `<p class="page-subtitle">${escapeHTML(error.message)} — run the screenshots SQL setup first.</p>`;
-        return;
-    }
-    if (!data?.length) {
-        grid.innerHTML = '<div class="empty-state"><div class="empty-icon">♡</div><h3>No screenshots yet</h3><p>Save the first little piece of a conversation here.</p></div>';
-        return;
-    }
-    const cards = await Promise.all(data.map(async item => ({ item, url: await getSignedUrl(item.image_path) })));
-    grid.innerHTML = cards.map(({item,url}) => url ? `
-        <article class="screenshot-card">
-          <button class="screenshot-image-button" type="button" onclick="openPhotoLightbox('${escapeAttribute(url)}','${escapeAttribute(item.caption || "Our screenshot")}')"><img src="${escapeAttribute(url)}" alt="${escapeAttribute(item.caption || "Our screenshot")}"></button>
-          <div class="screenshot-card-caption"><p>${escapeHTML(item.caption || "A little piece of us")}</p><button class="action-btn delete" onclick="deleteScreenshot('${item.id}','${escapeAttribute(item.image_path)}')">Remove</button></div>
-          <time>${formatDate(item.created_at.slice(0,10))}</time>
-        </article>` : "").join("");
-}
-
-async function uploadScreenshots(fileList) {
-    if (!screenshotsUnlocked) return;
-    const files = Array.from(fileList || []).filter(file => file.type.startsWith("image/"));
-    for (const file of files) {
-        const path = `${currentRoom.id}/screenshots/${crypto.randomUUID()}-${safeFileName(file.name)}`;
-        const { error: uploadError } = await supabaseClient.storage.from("our-story").upload(path, file, { cacheControl: "3600", upsert: false });
-        if (uploadError) { showToast("Upload failed: " + uploadError.message); continue; }
-        const { error } = await supabaseClient.from("screenshots").insert({ room_id: currentRoom.id, image_path: path, caption: file.name.replace(/\.[^.]+$/, ""), created_by: currentUser.id });
-        if (error) { await deleteStorageFile(path); showToast("Couldn't save screenshot: " + error.message); }
-    }
-    document.getElementById("screenshotsFiles").value = "";
-    await loadScreenshots();
-    showToast("Screenshots saved ♡");
-}
-
-async function deleteScreenshot(id, path) {
-    if (!confirm("Remove this screenshot?")) return;
-    const { error } = await supabaseClient.from("screenshots").delete().eq("id", id);
-    if (error) { showToast(error.message); return; }
-    await deleteStorageFile(path);
-    await loadScreenshots();
 }
 
 
@@ -3429,3 +3280,80 @@ function toggleTheme() {
 }
 
 document.addEventListener("DOMContentLoaded", applySavedTheme);
+
+
+
+/* Runtime contrast guard: fixes dynamically-created cards and edit forms.
+   Inline important styles ensure older theme selectors cannot override them. */
+(function installContrastGuard() {
+  function forceStyle(el, styles) {
+    if (!el) return;
+    for (const [property, value] of Object.entries(styles)) {
+      el.style.setProperty(property, value, "important");
+    }
+  }
+
+  function applyContrastFixes(root = document) {
+    root.querySelectorAll?.("button.action-btn, .card-actions > button, article .card-actions > button").forEach((button) => {
+      const isDelete = button.classList.contains("delete") ||
+        /delete|remove/i.test(button.textContent || "");
+      forceStyle(button, {
+        "background-color": isDelete ? "#704047" : "#49372d",
+        "background-image": "none",
+        "color": isDelete ? "#fff4ec" : "#fff4e4",
+        "-webkit-text-fill-color": isDelete ? "#fff4ec" : "#fff4e4",
+        "border": isDelete ? "1px solid #c18a80" : "1px solid #c2a16f",
+        "text-shadow": "none",
+        "opacity": "1"
+      });
+      button.querySelectorAll("*").forEach(child => forceStyle(child, {
+        "color": isDelete ? "#fff4ec" : "#fff4e4",
+        "-webkit-text-fill-color": isDelete ? "#fff4ec" : "#fff4e4"
+      }));
+    });
+
+    const modal = document.querySelector(".modal");
+    const content = document.querySelector("#modalContent");
+    if (modal) forceStyle(modal, {
+      "background-color": "#f3e8d5",
+      "color": "#30251f",
+      "border-color": "#c8b18f"
+    });
+    if (content) {
+      forceStyle(content, {
+        "background-color": "#f3e8d5",
+        "color": "#30251f",
+        "border-color": "#c8b18f"
+      });
+      content.querySelectorAll("h1,h2,h3,label,p,.form-label").forEach(el =>
+        forceStyle(el, {"color":"#30251f", "-webkit-text-fill-color":"#30251f"})
+      );
+      content.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]),textarea,select').forEach(el =>
+        forceStyle(el, {
+          "background-color":"#fffaf1",
+          "color":"#30251f",
+          "-webkit-text-fill-color":"#30251f",
+          "border":"1px solid #bda887",
+          "caret-color":"#30251f"
+        })
+      );
+      content.querySelectorAll("input::placeholder,textarea::placeholder");
+      content.querySelectorAll("button.primary-btn").forEach(el =>
+        forceStyle(el, {
+          "background-color":"#49372d",
+          "color":"#fff4e4",
+          "-webkit-text-fill-color":"#fff4e4"
+        })
+      );
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => applyContrastFixes(), { once: true });
+  } else {
+    applyContrastFixes();
+  }
+
+  const observer = new MutationObserver(() => applyContrastFixes());
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+})();
