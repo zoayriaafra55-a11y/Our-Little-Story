@@ -1,146 +1,89 @@
 /* =========================================================
    OUR LITTLE STORY
-   COMPLETE JAVASCRIPT
+   COZY PURPLE THEME
 ========================================================= */
 
+:root {
+    --purple-dark: #3f3151;
+    --purple: #70577e;
+    --purple-light: #a88caf;
+    --lavender: #d9c9dc;
 
-/* =========================================================
-   SUPABASE CONFIGURATION
+    --cream: #f8f2ea;
+    --cream-dark: #eee3d7;
+    --white: #fffdf9;
 
-   REPLACE THESE TWO VALUES
-========================================================= */
+    --text: #403747;
+    --muted: #877d88;
 
-const SUPABASE_URL = "https://edhycsnaexlixgujqwvj.supabase.co";
+    --pink: #b97991;
 
-const SUPABASE_KEY = "sb_publishable_8iQAzI21l4orCRp2A48U2w_AP_4_B5A";
+    --shadow:
+        0 18px 50px rgba(63, 49, 81, 0.10);
 
-const supabaseClient =
-    window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_KEY
-    );
-
-
-/* =========================================================
-   GLOBAL STATE
-========================================================= */
-
-let currentUser = null;
-
-let currentRoom = null;
-
-let currentProfile = null;
-
-let realtimeChannel = null;
-
-let doodleChannel = null;
-
-let editingId = null;
-
-let currentBrushColor = "#3f3151";
-
-let currentBrushSize = 6;
-
-let currentTool = "brush";
-
-let isDrawing = false;
-
-let currentStroke = [];
-
-let canvas;
-let ctx;
-
-let canvasWidth = 1000;
-let canvasHeight = 700;
-
-
-/* =========================================================
-   START
-========================================================= */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    initialize
-);
-
-
-async function initialize() {
-
-    const {
-        data: {
-            session
-        }
-    } = await supabaseClient.auth.getSession();
-
-
-    if (session) {
-
-        currentUser = session.user;
-
-        await afterLogin();
-
-    } else {
-
-        showScreen("authScreen");
-
-    }
-
-
-    supabaseClient.auth.onAuthStateChange(
-        async (event, session) => {
-
-            if (session) {
-
-                currentUser = session.user;
-
-            } else {
-
-                currentUser = null;
-
-                currentRoom = null;
-
-                showScreen("authScreen");
-
-            }
-
-        }
-    );
+    --radius: 22px;
 }
 
 
 /* =========================================================
-   SCREEN MANAGEMENT
+   RESET
 ========================================================= */
 
-function showScreen(screenId) {
+* {
+    box-sizing: border-box;
+}
 
-    document
-        .querySelectorAll(".screen")
-        .forEach(screen => {
-            screen.classList.add("hidden");
-        });
+html,
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+}
 
-    document
-        .getElementById(screenId)
-        .classList.remove("hidden");
+body {
+    font-family: "DM Sans", sans-serif;
+    color: var(--text);
+    background:
+        radial-gradient(
+            circle at 10% 10%,
+            rgba(168, 140, 175, 0.18),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 90% 80%,
+            rgba(185, 121, 145, 0.12),
+            transparent 30%
+        ),
+        var(--cream);
+}
 
-    document
-        .getElementById("app")
-        .classList.add("hidden");
+button,
+input,
+textarea {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
 }
 
 
-function showApp() {
+/* =========================================================
+   SCREEN
+========================================================= */
 
-    document
-        .querySelectorAll(".screen")
-        .forEach(screen => {
-            screen.classList.add("hidden");
-        });
+.screen {
+    min-height: 100vh;
 
-    document
-        .getElementById("app")
-        .classList.remove("hidden");
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 25px;
+}
+
+.hidden {
+    display: none !important;
 }
 
 
@@ -148,297 +91,172 @@ function showApp() {
    AUTH
 ========================================================= */
 
-function showAuth(type) {
+.auth-card,
+.room-card {
+    width: min(440px, 100%);
 
-    const login =
-        document.getElementById("loginForm");
+    background: rgba(255, 253, 249, 0.92);
 
-    const signup =
-        document.getElementById("signupForm");
+    padding: 45px;
 
-    const loginTab =
-        document.getElementById("loginTab");
+    border-radius: 30px;
 
-    const signupTab =
-        document.getElementById("signupTab");
+    box-shadow: var(--shadow);
 
+    text-align: center;
 
-    if (type === "login") {
-
-        login.classList.remove("hidden");
-
-        signup.classList.add("hidden");
-
-        loginTab.classList.add("active");
-
-        signupTab.classList.remove("active");
-
-    } else {
-
-        login.classList.add("hidden");
-
-        signup.classList.remove("hidden");
-
-        loginTab.classList.remove("active");
-
-        signupTab.classList.add("active");
-
-    }
-
-    clearMessage("authMessage");
+    border: 1px solid rgba(112, 87, 126, 0.12);
 }
 
-
-async function signup() {
-
-    const name =
-        document
-            .getElementById("signupName")
-            .value
-            .trim();
-
-    const email =
-        document
-            .getElementById("signupEmail")
-            .value
-            .trim();
-
-    const password =
-        document
-            .getElementById("signupPassword")
-            .value;
-
-
-    if (!name || !email || !password) {
-
-        showMessage(
-            "authMessage",
-            "Please fill in everything ♡"
-        );
-
-        return;
-    }
-
-
-    if (password.length < 6) {
-
-        showMessage(
-            "authMessage",
-            "Your password needs at least 6 characters."
-        );
-
-        return;
-    }
-
-
-    showMessage(
-        "authMessage",
-        "Creating your account..."
-    );
-
-
-    const {
-        data,
-        error
-    } =
-        await supabaseClient.auth.signUp({
-
-            email,
-
-            password,
-
-            options: {
-
-                data: {
-                    display_name: name
-                }
-
-            }
-
-        });
-
-
-    if (error) {
-
-        showMessage(
-            "authMessage",
-            error.message
-        );
-
-        return;
-    }
-
-
-    if (data.session) {
-
-        currentUser = data.user;
-
-        await afterLogin();
-
-    } else {
-
-        showMessage(
-            "authMessage",
-            "Account created! Check your email if confirmation is enabled."
-        );
-
-        showAuth("login");
-
-    }
+.tiny-star {
+    font-size: 30px;
+    color: var(--purple);
+    margin-bottom: 10px;
 }
 
+.auth-card h1,
+.room-card h1 {
+    font-family: "Playfair Display", serif;
 
-async function login() {
+    font-size: 34px;
 
-    const email =
-        document
-            .getElementById("loginEmail")
-            .value
-            .trim();
-
-    const password =
-        document
-            .getElementById("loginPassword")
-            .value;
-
-
-    if (!email || !password) {
-
-        showMessage(
-            "authMessage",
-            "Enter your email and password."
-        );
-
-        return;
-    }
-
-
-    showMessage(
-        "authMessage",
-        "Opening your little world..."
-    );
-
-
-    const {
-        data,
-        error
-    } =
-        await supabaseClient.auth.signInWithPassword({
-
-            email,
-
-            password
-
-        });
-
-
-    if (error) {
-
-        showMessage(
-            "authMessage",
-            error.message
-        );
-
-        return;
-    }
-
-
-    currentUser = data.user;
-
-    await afterLogin();
+    margin: 0 0 8px;
 }
 
+.subtitle {
+    color: var(--muted);
 
-async function logout() {
+    line-height: 1.7;
 
-    if (realtimeChannel) {
-
-        await supabaseClient
-            .removeChannel(realtimeChannel);
-
-        realtimeChannel = null;
-    }
-
-
-    if (doodleChannel) {
-
-        await supabaseClient
-            .removeChannel(doodleChannel);
-
-        doodleChannel = null;
-    }
-
-
-    await supabaseClient.auth.signOut();
-
-    currentUser = null;
-
-    currentRoom = null;
-
-    showScreen("authScreen");
+    margin-bottom: 30px;
 }
 
+.auth-tabs {
+    display: flex;
 
-/* =========================================================
-   AFTER LOGIN
-========================================================= */
+    gap: 5px;
 
-async function afterLogin() {
+    background: var(--cream-dark);
 
-    await loadProfile();
+    padding: 5px;
 
-    await findExistingRoom();
+    border-radius: 14px;
 
+    margin-bottom: 20px;
 }
 
+.auth-tab {
+    flex: 1;
 
-/* =========================================================
-   PROFILE
-========================================================= */
+    border: 0;
 
-async function loadProfile() {
+    background: transparent;
 
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("profiles")
-            .select("*")
-            .eq("id", currentUser.id)
-            .maybeSingle();
+    padding: 11px;
 
+    border-radius: 10px;
 
-    if (error) {
-
-        console.error(error);
-
-        return;
-    }
-
-
-    currentProfile = data;
+    color: var(--muted);
 }
 
+.auth-tab.active {
+    background: var(--white);
 
-async function updateProfileName(name) {
+    color: var(--purple-dark);
 
-    const {
-        error
-    } =
-        await supabaseClient
-            .from("profiles")
-            .update({
-                display_name: name
-            })
-            .eq("id", currentUser.id);
+    box-shadow: 0 3px 10px rgba(63,49,81,.07);
+}
 
+input,
+textarea {
+    width: 100%;
 
-    if (!error) {
+    border: 1px solid rgba(112,87,126,.18);
 
-        currentProfile.display_name = name;
+    background: var(--white);
 
-    }
+    color: var(--text);
+
+    border-radius: 13px;
+
+    padding: 13px 15px;
+
+    outline: none;
+
+    margin-bottom: 12px;
+}
+
+textarea {
+    min-height: 180px;
+
+    resize: vertical;
+}
+
+input:focus,
+textarea:focus {
+    border-color: var(--purple-light);
+
+    box-shadow:
+        0 0 0 3px rgba(168,140,175,.12);
+}
+
+.primary-btn,
+.secondary-btn {
+    width: 100%;
+
+    border: 0;
+
+    padding: 13px 18px;
+
+    border-radius: 13px;
+
+    transition: .2s ease;
+}
+
+.primary-btn {
+    color: white;
+
+    background: var(--purple-dark);
+}
+
+.primary-btn:hover {
+    transform: translateY(-1px);
+
+    background: var(--purple);
+}
+
+.secondary-btn {
+    color: var(--purple-dark);
+
+    background: var(--lavender);
+}
+
+.primary-btn.small {
+    width: auto;
+
+    padding: 10px 16px;
+}
+
+.message {
+    min-height: 20px;
+
+    font-size: 13px;
+
+    color: var(--pink);
+
+    margin-top: 15px;
+}
+
+.text-btn {
+    background: none;
+
+    border: 0;
+
+    color: var(--muted);
+
+    margin-top: 20px;
+
+    text-decoration: underline;
 }
 
 
@@ -446,315 +264,425 @@ async function updateProfileName(name) {
    ROOM
 ========================================================= */
 
-async function findExistingRoom() {
+.room-card > p {
+    color: var(--muted);
 
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("room_members")
-            .select(`
-                room_id,
-                rooms (
-                    id,
-                    name,
-                    invite_code
-                )
-            `)
-            .eq("user_id", currentUser.id)
-            .limit(1);
-
-
-    if (error) {
-
-        console.error(error);
-
-        showScreen("roomScreen");
-
-        return;
-    }
-
-
-    if (data && data.length > 0) {
-
-        currentRoom = data[0].rooms;
-
-        await enterRoom();
-
-    } else {
-
-        showScreen("roomScreen");
-
-    }
+    line-height: 1.7;
 }
 
+.room-option {
+    text-align: left;
 
-async function createRoom() {
+    background: rgba(238,227,215,.5);
 
-    const name =
-        document
-            .getElementById("newRoomName")
-            .value
-            .trim()
-        || "Our Little Story";
+    padding: 20px;
 
+    border-radius: 18px;
 
-    showMessage(
-        "roomMessage",
-        "Creating your little world..."
-    );
-
-
-    const {
-        data,
-        error
-    } =
-        await supabaseClient.rpc(
-            "create_room",
-            {
-                room_name: name
-            }
-        );
-
-
-    if (error) {
-
-        showMessage(
-            "roomMessage",
-            error.message
-        );
-
-        return;
-    }
-
-
-    const roomId = data[0].room_id;
-
-    const inviteCode = data[0].invite_code;
-
-
-    const {
-        data: roomData,
-        error: roomError
-    } =
-        await supabaseClient
-            .from("rooms")
-            .select("*")
-            .eq("id", roomId)
-            .single();
-
-
-    if (roomError) {
-
-        showMessage(
-            "roomMessage",
-            roomError.message
-        );
-
-        return;
-    }
-
-
-    currentRoom = roomData;
-
-
-    alert(
-        "Your room is ready!\n\n" +
-        "Invite code: " +
-        inviteCode +
-        "\n\n" +
-        "Give this code to your person so they can join."
-    );
-
-
-    await enterRoom();
+    margin-top: 20px;
 }
 
+.room-option h2 {
+    font-family: "Caveat", cursive;
 
-async function joinRoom() {
+    font-size: 27px;
 
-    const code =
-        document
-            .getElementById("joinCode")
-            .value
-            .trim()
-            .toUpperCase();
-
-
-    if (code.length !== 8) {
-
-        showMessage(
-            "roomMessage",
-            "Your invite code should be 8 characters."
-        );
-
-        return;
-    }
-
-
-    showMessage(
-        "roomMessage",
-        "Joining..."
-    );
-
-
-    const {
-        data,
-        error
-    } =
-        await supabaseClient.rpc(
-            "join_room",
-            {
-                code
-            }
-        );
-
-
-    if (error) {
-
-        showMessage(
-            "roomMessage",
-            error.message
-        );
-
-        return;
-    }
-
-
-    const roomId = data;
-
-
-    const {
-        data: roomData,
-        error: roomError
-    } =
-        await supabaseClient
-            .from("rooms")
-            .select("*")
-            .eq("id", roomId)
-            .single();
-
-
-    if (roomError) {
-
-        showMessage(
-            "roomMessage",
-            roomError.message
-        );
-
-        return;
-    }
-
-
-    currentRoom = roomData;
-
-    await enterRoom();
+    margin: 0 0 12px;
 }
 
+.divider {
+    margin: 25px 0;
 
-async function enterRoom() {
+    display: flex;
 
-    document
-        .getElementById("roomNameDisplay")
-        .textContent =
-        currentRoom.name;
+    align-items: center;
 
+    gap: 10px;
 
-    showApp();
+    color: var(--muted);
 
-
-    await loadAll();
-
-
-    setupRealtime();
-
-
-    navigate("home");
+    font-size: 13px;
 }
 
+.divider::before,
+.divider::after {
+    content: "";
 
-function showInviteCode() {
+    height: 1px;
 
-    if (!currentRoom) return;
+    flex: 1;
 
-    alert(
-        "Your room invite code is:\n\n" +
-        currentRoom.invite_code +
-        "\n\n" +
-        "Send this code to your person."
-    );
+    background: var(--lavender);
 }
 
 
 /* =========================================================
-   NAVIGATION
+   TOPBAR
 ========================================================= */
 
-function navigate(page) {
+.topbar {
+    height: 70px;
 
-    document
-        .querySelectorAll(".page")
-        .forEach(section => {
-            section.classList.remove("active-page");
-        });
+    display: flex;
 
+    justify-content: space-between;
 
-    const target =
-        document.getElementById(
-            "page-" + page
-        );
+    align-items: center;
 
+    padding: 0 28px;
 
-    if (target) {
+    background: rgba(255,253,249,.9);
 
-        target.classList.add("active-page");
+    border-bottom: 1px solid rgba(112,87,126,.1);
 
-    }
+    position: sticky;
 
+    top: 0;
 
-    document
-        .querySelectorAll(".nav-btn")
-        .forEach(btn => {
+    z-index: 20;
 
-            btn.classList.toggle(
-                "active",
-                btn.dataset.page === page
-            );
+    backdrop-filter: blur(15px);
+}
 
-        });
+.brand {
+    font-family: "Caveat", cursive;
 
+    font-size: 27px;
 
-    if (page === "doodle") {
+    font-weight: 600;
 
-        setTimeout(
-            initializeCanvas,
-            50
-        );
+    color: var(--purple-dark);
 
-    }
+    display: flex;
 
-    if (page === "chat") {
-        setTimeout(scrollMessagesToBottom, 50);
-    }
+    gap: 10px;
 
+    align-items: center;
+}
+
+.brand span:first-child {
+    color: var(--pink);
+}
+
+.room-info {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    font-size: 13px;
+
+    color: var(--muted);
+}
+
+.tiny-btn {
+    border: 0;
+
+    padding: 7px 12px;
+
+    border-radius: 9px;
+
+    background: var(--cream-dark);
+
+    color: var(--purple-dark);
 }
 
 
 /* =========================================================
-   LOAD EVERYTHING
+   APP LAYOUT
 ========================================================= */
 
-async function loadAll() {
+.app-layout {
+    display: flex;
 
-    await Promise.all([
-        loadStory(),
-        loadMemories(),
-        loadJournal(),
-        loadCharacters(),
-        loadMessages(),
-        loadDoodles()
-    ]);
+    min-height: calc(100vh - 70px);
+}
+
+.sidebar {
+    width: 220px;
+
+    flex-shrink: 0;
+
+    background: rgba(255,253,249,.65);
+
+    border-right: 1px solid rgba(112,87,126,.1);
+
+    padding: 25px 15px;
+
+    display: flex;
+
+    flex-direction: column;
+}
+
+.nav-btn {
+    width: 100%;
+
+    border: 0;
+
+    background: transparent;
+
+    color: var(--muted);
+
+    text-align: left;
+
+    padding: 13px 15px;
+
+    border-radius: 13px;
+
+    margin-bottom: 4px;
+
+    transition: .2s;
+}
+
+.nav-btn span {
+    display: inline-block;
+
+    width: 25px;
+
+    color: var(--purple);
+}
+
+.nav-btn:hover {
+    background: rgba(217,201,220,.3);
+
+    color: var(--purple-dark);
+}
+
+.nav-btn.active {
+    background: var(--lavender);
+
+    color: var(--purple-dark);
+
+    font-weight: 600;
+}
+
+.sidebar-bottom {
+    margin-top: auto;
+
+    text-align: center;
+}
+
+.little-note {
+    font-family: "Caveat", cursive;
+
+    color: var(--muted);
+
+    font-size: 18px;
+}
+
+
+/* =========================================================
+   CONTENT
+========================================================= */
+
+.content {
+    flex: 1;
+
+    max-width: 1200px;
+
+    width: 100%;
+
+    margin: 0 auto;
+
+    padding: 45px;
+}
+
+.page {
+    display: none;
+}
+
+.active-page {
+    display: block;
+}
+
+.page-heading {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: flex-end;
+
+    gap: 20px;
+
+    margin-bottom: 30px;
+}
+
+.eyebrow {
+    font-size: 11px;
+
+    letter-spacing: 3px;
+
+    color: var(--purple);
+
+    font-weight: 700;
+
+    margin: 0 0 6px;
+}
+
+h2 {
+    font-family: "Playfair Display", serif;
+
+    font-size: 36px;
+
+    margin: 0;
+
+    color: var(--purple-dark);
+}
+
+
+/* =========================================================
+   HOME
+========================================================= */
+
+.hero-card {
+    min-height: 350px;
+
+    border-radius: 30px;
+
+    padding: 55px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    text-align: center;
+
+    background:
+        radial-gradient(
+            circle at 15% 20%,
+            rgba(255,255,255,.6),
+            transparent 25%
+        ),
+        linear-gradient(
+            135deg,
+            #e3d3e5,
+            #f7ebe3
+        );
+
+    box-shadow: var(--shadow);
+
+    position: relative;
+
+    overflow: hidden;
+}
+
+.hero-card::before,
+.hero-card::after {
+    content: "✦";
+
+    position: absolute;
+
+    font-size: 80px;
+
+    color: rgba(112,87,126,.08);
+}
+
+.hero-card::before {
+    top: -15px;
+    left: 35px;
+}
+
+.hero-card::after {
+    bottom: -20px;
+    right: 45px;
+}
+
+.hero-stars {
+    color: var(--purple);
+
+    font-size: 20px;
+
+    margin-bottom: 15px;
+}
+
+.hero-card h1 {
+    font-family: "Playfair Display", serif;
+
+    font-size: clamp(42px, 7vw, 75px);
+
+    color: var(--purple-dark);
+
+    margin: 0 0 15px;
+}
+
+.hero-text {
+    max-width: 620px;
+
+    margin: 0 auto;
+
+    color: #6d6270;
+
+    line-height: 1.8;
+
+    font-size: 16px;
+}
+
+.hero-date {
+    margin-top: 25px;
+
+    color: var(--purple);
+
+    font-family: "Caveat", cursive;
+
+    font-size: 22px;
+}
+
+.home-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 18px;
+
+    margin-top: 22px;
+}
+
+.home-card {
+    background: var(--white);
+
+    padding: 25px;
+
+    border-radius: 20px;
+
+    border: 1px solid rgba(112,87,126,.08);
+
+    cursor: pointer;
+
+    transition: .25s;
+
+    box-shadow: 0 8px 25px rgba(63,49,81,.05);
+}
+
+.home-card:hover {
+    transform: translateY(-4px);
+
+    box-shadow: var(--shadow);
+}
+
+.home-card > span {
+    font-size: 25px;
+
+    color: var(--purple);
+}
+
+.home-card h3 {
+    margin: 15px 0 7px;
+
+    color: var(--purple-dark);
+}
+
+.home-card p {
+    color: var(--muted);
+
+    line-height: 1.6;
+
+    font-size: 13px;
+
+    margin: 0;
 }
 
 
@@ -762,1396 +690,363 @@ async function loadAll() {
    STORY
 ========================================================= */
 
-async function loadStory() {
+.story-list {
+    display: flex;
 
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("story_sections")
-            .select("*")
-            .eq("room_id", currentRoom.id)
-            .order("story_date", { ascending: true, nullsFirst: false })
-            .order("created_at", { ascending: true });
+    flex-direction: column;
 
-
-    if (error) {
-
-        console.error(error);
-
-        return;
-    }
-
-
-    // Keep Our Story in chronological order: oldest chapter first.
-    // If a chapter has no story_date, use its creation date as a fallback.
-    data.sort((a, b) => {
-        const dateA = a.story_date || (a.created_at ? a.created_at.slice(0, 10) : "9999-12-31");
-        const dateB = b.story_date || (b.created_at ? b.created_at.slice(0, 10) : "9999-12-31");
-        return dateA.localeCompare(dateB);
-    });
-
-    const container =
-        document.getElementById("storyList");
-
-
-    if (!data.length) {
-
-        container.innerHTML = emptyState(
-            "Your story hasn't been written yet.",
-            "Start with how you two met ♡"
-        );
-
-        return;
-    }
-
-
-    container.innerHTML =
-        data.map(
-            (item, index) => `
-
-            <article class="story-card">
-
-                <div class="story-number">
-                    ${item.story_date ? formatDate(item.story_date) : (item.created_at ? formatDate(item.created_at.slice(0,10)) : "A LITTLE CHAPTER")}
-                </div>
-
-                <h3>
-                    ${escapeHTML(item.title)}
-                </h3>
-
-                <p>
-                    ${escapeHTML(item.content)}
-                </p>
-
-                <div class="card-actions">
-
-                    <button
-                        class="action-btn"
-                        onclick="editStory('${item.id}')"
-                    >
-                        Edit
-                    </button>
-
-                    <button
-                        class="action-btn delete"
-                        onclick="deleteStory('${item.id}')"
-                    >
-                        Delete
-                    </button>
-
-                </div>
-
-            </article>
-
-        `
-        ).join("");
+    gap: 18px;
 }
 
+.story-card {
+    background: var(--white);
 
-function openStoryModal(item = null) {
+    border-radius: 20px;
 
-    editingId = item ? item.id : null;
+    padding: 28px;
 
+    border-left: 5px solid var(--purple-light);
 
-    document.getElementById(
-        "modalContent"
-    ).innerHTML = `
-
-        <h2>
-            ${item ? "Edit chapter" : "Add a chapter"}
-        </h2>
-
-        <label class="form-label">
-            Chapter title
-        </label>
-
-        <input
-            id="storyTitle"
-            type="text"
-            value="${item ? escapeAttribute(item.title) : ""}"
-            placeholder="The day we met..."
-        >
-
-        <label class="form-label">When did this part happen?</label>
-        <input id="storyDate" type="date" value="${item?.story_date || (item?.created_at ? item.created_at.slice(0,10) : "")}">
-
-        <label class="form-label">
-            Your story
-        </label>
-
-        <textarea
-            id="storyContent"
-            placeholder="Write everything here..."
-        >${item ? escapeHTML(item.content) : ""}</textarea>
-
-        <button
-            class="primary-btn"
-            onclick="saveStory()"
-        >
-            Save chapter ♡
-        </button>
-
-    `;
-
-
-    openModal();
+    box-shadow: 0 8px 25px rgba(63,49,81,.05);
 }
 
+.story-number {
+    color: var(--pink);
 
-async function editStory(id) {
+    font-family: "Caveat", cursive;
 
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("story_sections")
-            .select("*")
-            .eq("id", id)
-            .single();
-
-
-    if (!error) {
-
-        openStoryModal(data);
-
-    }
+    font-size: 21px;
 }
 
+.story-card h3 {
+    font-family: "Playfair Display", serif;
 
-async function saveStory() {
+    color: var(--purple-dark);
 
-    const title =
-        document
-            .getElementById("storyTitle")
-            .value
-            .trim();
+    font-size: 25px;
 
-    const content =
-        document
-            .getElementById("storyContent")
-            .value
-            .trim();
-    const storyDate = document.getElementById("storyDate").value || null;
-
-
-    if (!title || !content) {
-
-        showToast(
-            "Please fill in the title and story."
-        );
-
-        return;
-    }
-
-
-    let error;
-
-
-    if (editingId) {
-
-        ({
-            error
-        } =
-            await supabaseClient
-                .from("story_sections")
-                .update({
-                    title,
-                    content,
-                    story_date: storyDate,
-                    updated_at: new Date().toISOString()
-                })
-                .eq("id", editingId));
-
-    } else {
-
-        ({
-            error
-        } =
-            await supabaseClient
-                .from("story_sections")
-                .insert({
-                    room_id: currentRoom.id,
-                    title,
-                    content,
-                    story_date: storyDate,
-                    sort_order: 999,
-                    created_by: currentUser.id
-                }));
-
-    }
-
-
-    if (error) {
-
-        showToast(error.message);
-
-        return;
-    }
-
-
-    closeModal();
-
-    await loadStory();
-
-    showToast("Chapter saved ♡");
+    margin: 5px 0 10px;
 }
 
+.story-card p {
+    color: #6f6671;
 
-async function deleteStory(id) {
+    line-height: 1.9;
 
-    if (
-        !confirm(
-            "Delete this chapter?"
-        )
-    ) return;
+    white-space: pre-wrap;
+}
 
+.card-actions {
+    display: flex;
 
-    const {
-        error
-    } =
-        await supabaseClient
-            .from("story_sections")
-            .delete()
-            .eq("id", id);
+    gap: 8px;
 
+    margin-top: 18px;
+}
 
-    if (error) {
+.action-btn {
+    border: 0;
 
-        showToast(error.message);
+    padding: 7px 12px;
 
-        return;
-    }
+    border-radius: 9px;
 
+    background: var(--cream-dark);
 
-    await loadStory();
+    color: var(--purple-dark);
 
-    showToast("Chapter deleted.");
+    font-size: 12px;
+}
+
+.action-btn.delete {
+    color: #9b5365;
 }
 
 
 /* =========================================================
-   MEMORIES — CHRONOLOGICAL PHOTO SCRAPBOOK
+   MEMORIES
 ========================================================= */
 
-function getMemoryImagePaths(item) {
-    // image_paths is the new multi-photo field. image_path keeps older
-    // memories compatible with the original version of the website.
-    const paths = Array.isArray(item?.image_paths)
-        ? item.image_paths.filter(Boolean)
-        : [];
+.memory-grid {
+    display: grid;
 
-    if (item?.image_path && !paths.includes(item.image_path)) {
-        paths.unshift(item.image_path);
-    }
+    grid-template-columns:
+        repeat(auto-fill, minmax(240px, 1fr));
 
-    return [...new Set(paths)];
+    gap: 22px;
 }
 
+.memory-card {
+    background: var(--white);
 
-async function loadMemories() {
-    const { data, error } = await supabaseClient
-        .from("memories")
-        .select("*")
-        .eq("room_id", currentRoom.id)
-        .order("memory_date", { ascending: false, nullsFirst: false })
-        .order("created_at", { ascending: false });
+    border-radius: 20px;
 
-    if (error) {
-        console.error(error);
-        showToast("Couldn't load memories: " + error.message);
-        return;
-    }
+    overflow: hidden;
 
-    const container = document.getElementById("memoryGrid");
-
-    if (!data || !data.length) {
-        container.innerHTML = emptyState(
-            "Your timeline is waiting for its first memory.",
-            "Add a date, a few photos, and a little story ♡"
-        );
-        return;
-    }
-
-    // Show newest memories first, while keeping undated memories at the end.
-    data.sort((a, b) => {
-        if (!a.memory_date && b.memory_date) return 1;
-        if (a.memory_date && !b.memory_date) return -1;
-        if (a.memory_date !== b.memory_date) {
-            return (b.memory_date || "").localeCompare(a.memory_date || "");
-        }
-        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-    });
-
-    const cards = [];
-
-    for (const item of data) {
-        const paths = getMemoryImagePaths(item);
-        const urls = (await Promise.all(paths.map(getSignedUrl))).filter(Boolean);
-
-        const photos = urls.length
-            ? `<div class="memory-photo-grid ${urls.length === 1 ? "one-photo" : ""}">
-                ${urls.map((url, index) => `
-                    <button class="memory-photo-button" type="button"
-                        onclick="openPhotoLightbox('${escapeAttribute(url)}', '${escapeAttribute(item.title)}')"
-                        aria-label="Enlarge photo ${index + 1}">
-                        <img class="memory-image" src="${escapeAttribute(url)}"
-                            alt="${escapeAttribute(item.title)} — photo ${index + 1}" loading="lazy">
-                    </button>
-                `).join("")}
-               </div>`
-            : `<button class="memory-no-photo" type="button"
-                    onclick="editMemory('${item.id}')">♡<span>Add photos</span></button>`;
-
-        cards.push(`
-            <article class="memory-card">
-                <div class="memory-timeline-dot" aria-hidden="true"></div>
-                ${photos}
-                <div class="memory-info">
-                    <div class="memory-date">
-                        ${item.memory_date ? formatDate(item.memory_date) : "DATE NOT SET"}
-                    </div>
-                    <h3>${escapeHTML(item.title)}</h3>
-                    <p>${escapeHTML(item.caption || "")}</p>
-                    ${urls.length > 1 ? `<div class="memory-photo-count">${urls.length} little moments ♡</div>` : ""}
-                    <div class="card-actions">
-                        <button class="action-btn" onclick="editMemory('${item.id}')">Edit</button>
-                        <button class="action-btn delete" onclick="deleteMemory('${item.id}')">Delete</button>
-                    </div>
-                </div>
-            </article>
-        `);
-    }
-
-    container.innerHTML = cards.join("");
+    box-shadow: 0 8px 25px rgba(63,49,81,.06);
 }
 
+.memory-image {
+    width: 100%;
 
-async function openMemoryModal(item = null) {
-    editingId = item ? item.id : null;
-    const existingPaths = item ? getMemoryImagePaths(item) : [];
-    const existingPhotos = await Promise.all(existingPaths.map(async path => {
-        const url = await getSignedUrl(path);
-        return { path, url };
-    }));
+    aspect-ratio: 1 / 1;
 
-    document.getElementById("modalContent").innerHTML = `
-        <h2>${item ? "Edit memory" : "Add a memory"}</h2>
+    object-fit: cover;
 
-        <label class="form-label">Photos</label>
-        <p class="memory-modal-hint">
-            ${item
-                ? "Choose extra photos to add to this memory. Your current photos will stay."
-                : "Choose as many photos as you like from your computer."}
-        </p>
-        <input id="memoryFiles" class="file-input" type="file" accept="image/*" multiple>
-        ${existingPhotos.length ? `
-            <div class="existing-photo-note">
-                Current photos — untick nothing; select a photo below to remove it when you save.
-            </div>
-            <div class="memory-edit-photo-grid">
-                ${existingPhotos.map((photo, index) => `
-                    <label class="memory-edit-photo">
-                        ${photo.url
-                            ? `<img src="${escapeAttribute(photo.url)}" alt="Saved memory photo ${index + 1}">`
-                            : `<span class="memory-edit-photo-missing">♡</span>`}
-                        <span class="memory-remove-choice">
-                            <input type="checkbox" name="removeMemoryPhoto"
-                                value="${escapeAttribute(photo.path)}">
-                            Remove photo
-                        </span>
-                    </label>
-                `).join("")}
-            </div>
-        ` : ""}
-
-        <label class="form-label">Title</label>
-        <input id="memoryTitle" type="text"
-            value="${item ? escapeAttribute(item.title) : ""}"
-            placeholder="That one beautiful day...">
-
-        <label class="form-label">Date this memory happened</label>
-        <input id="memoryDate" type="date" value="${item?.memory_date || ""}">
-
-        <label class="form-label">Caption</label>
-        <textarea id="memoryCaption"
-            placeholder="Write what happened, why it matters, or what you want to remember...">${item ? escapeHTML(item.caption || "") : ""}</textarea>
-
-        <button class="primary-btn" onclick="saveMemory()">Save memory ♡</button>
-    `;
-
-    openModal();
+    display: block;
 }
 
-
-async function editMemory(id) {
-    const { data, error } = await supabaseClient
-        .from("memories")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-    if (error) {
-        showToast(error.message);
-        return;
-    }
-
-    openMemoryModal(data);
+.memory-info {
+    padding: 18px;
 }
 
+.memory-info h3 {
+    margin: 0 0 7px;
 
-async function saveMemory() {
-    const title = document.getElementById("memoryTitle").value.trim();
-    const date = document.getElementById("memoryDate").value || null;
-    const caption = document.getElementById("memoryCaption").value.trim();
-    const fileInput = document.getElementById("memoryFiles");
-    const files = Array.from(fileInput.files || []);
-
-    if (!title) {
-        showToast("Give this memory a title ♡");
-        return;
-    }
-
-    if (files.some(file => !file.type.startsWith("image/"))) {
-        showToast("Please choose image files only.");
-        return;
-    }
-
-    const MAX_FILE_SIZE = 10 * 1024 * 1024;
-    if (files.some(file => file.size > MAX_FILE_SIZE)) {
-        showToast("Each photo must be 10 MB or smaller.");
-        return;
-    }
-
-    let existingItem = null;
-    let imagePaths = [];
-    let pathsToRemove = [];
-
-    if (editingId) {
-        const { data, error } = await supabaseClient
-            .from("memories")
-            .select("*")
-            .eq("id", editingId)
-            .single();
-
-        if (error) {
-            showToast(error.message);
-            return;
-        }
-
-        existingItem = data;
-        imagePaths = getMemoryImagePaths(data);
-        pathsToRemove = Array.from(
-            document.querySelectorAll('input[name="removeMemoryPhoto"]:checked')
-        ).map(input => input.value);
-        imagePaths = imagePaths.filter(path => !pathsToRemove.includes(path));
-    }
-
-    if (!editingId && !files.length) {
-        showToast("Choose at least one photo for your memory.");
-        return;
-    }
-
-    const newlyUploadedPaths = [];
-
-    if (files.length) {
-        showToast(`Uploading ${files.length} photo${files.length === 1 ? "" : "s"}...`);
-
-        for (const file of files) {
-            const path = `${currentRoom.id}/memories/${crypto.randomUUID()}-${safeFileName(file.name)}`;
-            const { error: uploadError } = await supabaseClient
-                .storage
-                .from("our-story")
-                .upload(path, file, {
-                    cacheControl: "3600",
-                    upsert: false
-                });
-
-            if (uploadError) {
-                await Promise.all(newlyUploadedPaths.map(deleteStorageFile));
-                showToast("Photo upload failed: " + uploadError.message);
-                return;
-            }
-
-            newlyUploadedPaths.push(path);
-            imagePaths.push(path);
-        }
-    }
-
-    let error;
-
-    if (editingId) {
-        ({ error } = await supabaseClient
-            .from("memories")
-            .update({
-                title,
-                memory_date: date,
-                caption,
-                image_path: imagePaths[0] || null,
-                image_paths: imagePaths
-            })
-            .eq("id", editingId));
-    } else {
-        ({ error } = await supabaseClient
-            .from("memories")
-            .insert({
-                room_id: currentRoom.id,
-                title,
-                caption,
-                memory_date: date,
-                image_path: imagePaths[0] || null,
-                image_paths: imagePaths,
-                created_by: currentUser.id
-            }));
-    }
-
-    if (error) {
-        await Promise.all(newlyUploadedPaths.map(deleteStorageFile));
-        showToast("Couldn't save the memory: " + error.message);
-        return;
-    }
-
-    if (pathsToRemove.length) {
-        await Promise.all(pathsToRemove.map(deleteStorageFile));
-    }
-
-    closeModal();
-    await loadMemories();
-    showToast("Memory saved to your timeline ♡");
+    color: var(--purple-dark);
 }
 
+.memory-info p {
+    color: var(--muted);
 
-async function deleteMemory(id) {
-    if (!confirm("Delete this memory and all of its photos?")) return;
+    font-size: 13px;
 
-    const { data: item, error: fetchError } = await supabaseClient
-        .from("memories")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-    if (fetchError) {
-        showToast(fetchError.message);
-        return;
-    }
-
-    const { error } = await supabaseClient
-        .from("memories")
-        .delete()
-        .eq("id", id);
-
-    if (error) {
-        showToast(error.message);
-        return;
-    }
-
-    await Promise.all(getMemoryImagePaths(item).map(deleteStorageFile));
-    await loadMemories();
-    showToast("Memory deleted.");
+    line-height: 1.6;
 }
 
+.memory-date {
+    font-size: 11px;
 
-function openPhotoLightbox(url, title) {
-    const overlay = document.getElementById("photoLightbox");
-    const image = document.getElementById("photoLightboxImage");
-    const caption = document.getElementById("photoLightboxCaption");
-    if (!overlay || !image || !caption) return;
+    color: var(--purple);
 
-    image.src = url;
-    image.alt = title || "Memory photo";
-    caption.textContent = title || "";
-    overlay.classList.remove("hidden");
-    document.body.classList.add("lightbox-open");
+    letter-spacing: 1px;
 }
 
-
-function closePhotoLightbox(event) {
-    if (event && event.target && !event.target.closest(".photo-lightbox-close")
-        && event.target.id !== "photoLightbox") return;
-
-    const overlay = document.getElementById("photoLightbox");
-    const image = document.getElementById("photoLightboxImage");
-    if (overlay) overlay.classList.add("hidden");
-    if (image) image.src = "";
-    document.body.classList.remove("lightbox-open");
-}
 
 /* =========================================================
    JOURNAL
 ========================================================= */
 
-async function loadJournal() {
+.journal-list {
+    display: grid;
 
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("journal_entries")
-            .select("*")
-            .eq("room_id", currentRoom.id)
-            .order("entry_date", {
-                ascending: false
-            })
-            .order("created_at", {
-                ascending: false
-            });
+    grid-template-columns:
+        repeat(auto-fill, minmax(300px, 1fr));
 
-
-    if (error) {
-
-        console.error(error);
-
-        return;
-    }
-
-
-    const container =
-        document.getElementById(
-            "journalList"
-        );
-
-
-    if (!data.length) {
-
-        container.innerHTML =
-            emptyState(
-                "The journal is still empty.",
-                "Write the first little entry ♡"
-            );
-
-        return;
-    }
-
-
-    container.innerHTML =
-        data.map(
-            item => `
-
-            <article class="journal-card">
-
-                <div class="journal-date">
-                    ${formatDate(item.entry_date)}
-                </div>
-
-                <h3>
-                    ${escapeHTML(item.title)}
-                </h3>
-
-                <div class="journal-content">
-                    ${escapeHTML(item.content)}
-                </div>
-
-                <div class="card-actions">
-
-                    <button
-                        class="action-btn"
-                        onclick="editJournal('${item.id}')"
-                    >
-                        Edit
-                    </button>
-
-                    <button
-                        class="action-btn delete"
-                        onclick="deleteJournal('${item.id}')"
-                    >
-                        Delete
-                    </button>
-
-                </div>
-
-            </article>
-
-        `
-        ).join("");
+    gap: 20px;
 }
 
+.journal-card {
+    background: var(--white);
 
-function openJournalModal(item = null) {
+    border-radius: 20px;
 
-    editingId = item ? item.id : null;
+    padding: 25px;
 
+    box-shadow: 0 8px 25px rgba(63,49,81,.05);
 
-    document.getElementById(
-        "modalContent"
-    ).innerHTML = `
-
-        <h2>
-            ${item ? "Edit entry" : "New journal entry"}
-        </h2>
-
-        <label class="form-label">
-            Date
-        </label>
-
-        <input
-            id="journalDate"
-            type="date"
-            value="${
-                item?.entry_date
-                ||
-                new Date()
-                    .toISOString()
-                    .slice(0,10)
-            }"
-        >
-
-        <label class="form-label">
-            Title
-        </label>
-
-        <input
-            id="journalTitle"
-            type="text"
-            value="${item ? escapeAttribute(item.title) : ""}"
-            placeholder="Today..."
-        >
-
-        <label class="form-label">
-            Entry
-        </label>
-
-        <textarea
-            id="journalContent"
-            placeholder="Dear diary..."
-        >${item ? escapeHTML(item.content) : ""}</textarea>
-
-        <button
-            class="primary-btn"
-            onclick="saveJournal()"
-        >
-            Save entry ♡
-        </button>
-
-    `;
-
-
-    openModal();
+    position: relative;
 }
 
+.journal-card::before {
+    content: "♡";
 
-async function editJournal(id) {
+    position: absolute;
 
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("journal_entries")
-            .select("*")
-            .eq("id", id)
-            .single();
+    top: 17px;
 
+    right: 20px;
 
-    if (!error) {
+    color: var(--pink);
 
-        openJournalModal(data);
-
-    }
+    opacity: .6;
 }
 
+.journal-date {
+    font-size: 11px;
 
-async function saveJournal() {
+    letter-spacing: 2px;
 
-    const title =
-        document
-            .getElementById("journalTitle")
-            .value
-            .trim();
+    color: var(--purple);
 
-    const content =
-        document
-            .getElementById("journalContent")
-            .value
-            .trim();
-
-    const date =
-        document
-            .getElementById("journalDate")
-            .value;
-
-
-    if (!title || !content) {
-
-        showToast(
-            "Write something first ♡"
-        );
-
-        return;
-    }
-
-
-    let error;
-
-
-    if (editingId) {
-
-        ({
-            error
-        } =
-            await supabaseClient
-                .from("journal_entries")
-                .update({
-                    title,
-                    content,
-                    entry_date: date,
-                    updated_at:
-                        new Date().toISOString()
-                })
-                .eq("id", editingId));
-
-    } else {
-
-        ({
-            error
-        } =
-            await supabaseClient
-                .from("journal_entries")
-                .insert({
-
-                    room_id:
-                        currentRoom.id,
-
-                    title,
-
-                    content,
-
-                    entry_date:
-                        date,
-
-                    created_by:
-                        currentUser.id
-
-                }));
-
-    }
-
-
-    if (error) {
-
-        showToast(error.message);
-
-        return;
-    }
-
-
-    closeModal();
-
-    await loadJournal();
-
-    showToast("Journal entry saved ♡");
+    margin-bottom: 8px;
 }
 
+.journal-card h3 {
+    font-family: "Playfair Display", serif;
 
-async function deleteJournal(id) {
+    color: var(--purple-dark);
 
-    if (
-        !confirm(
-            "Delete this journal entry?"
-        )
-    ) return;
+    margin: 0 0 12px;
 
+    font-size: 23px;
+}
 
-    const {
-        error
-    } =
-        await supabaseClient
-            .from("journal_entries")
-            .delete()
-            .eq("id", id);
+.journal-content {
+    white-space: pre-wrap;
 
+    line-height: 1.8;
 
-    if (error) {
+    color: #6e6570;
 
-        showToast(error.message);
-
-        return;
-    }
-
-
-    await loadJournal();
-
-    showToast("Entry deleted.");
+    font-size: 14px;
 }
 
 
 /* =========================================================
-   CHARACTERS
+   DOODLE
 ========================================================= */
 
-async function loadCharacters() {
-
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("characters")
-            .select("*")
-            .eq("room_id", currentRoom.id)
-            .order("created_at", {
-                ascending: true
-            });
-
-
-    if (error) {
-
-        console.error(error);
-
-        return;
-    }
-
-
-    const container =
-        document.getElementById(
-            "characterGrid"
-        );
-
-
-    if (!data.length) {
-
-        container.innerHTML =
-            emptyState(
-                "No characters yet.",
-                "Obviously you two should be here first ♡"
-            );
-
-        return;
-    }
-
-
-    const cards = [];
-
-
-    for (const item of data) {
-
-        let imageHTML = "";
-
-
-        if (item.image_path) {
-
-            const url =
-                await getSignedUrl(
-                    item.image_path
-                );
-
-
-            if (url) {
-
-                imageHTML = `
-
-                    <img
-                        class="character-image"
-                        src="${url}"
-                        alt="${escapeAttribute(item.name)}"
-                    >
-
-                `;
-
-            }
-
-        }
-
-
-        if (!imageHTML) {
-
-            imageHTML = `
-
-                <div class="character-placeholder">
-                    ♡
-                </div>
-
-            `;
-
-        }
-
-
-        cards.push(`
-
-            <article class="character-card">
-
-                ${imageHTML}
-
-                <div class="character-info">
-
-                    <div class="character-role">
-                        ${escapeHTML(item.role)}
-                    </div>
-
-                    <h3>
-                        ${escapeHTML(item.name)}
-                    </h3>
-
-                    <p>
-                        ${escapeHTML(item.description)}
-                    </p>
-
-                    ${
-                        item.favorite
-                        ?
-                        `
-                        <div class="favorite-box">
-                            ♡ ${escapeHTML(item.favorite)}
-                        </div>
-                        `
-                        :
-                        ""
-                    }
-
-                    <div class="card-actions">
-
-                        <button
-                            class="action-btn"
-                            onclick="editCharacter('${item.id}')"
-                        >
-                            Edit
-                        </button>
-
-                        <button
-                            class="action-btn delete"
-                            onclick="deleteCharacter('${item.id}')"
-                        >
-                            Delete
-                        </button>
-
-                    </div>
-
-                </div>
-
-            </article>
-
-        `);
-
-    }
-
-
-    container.innerHTML =
-        cards.join("");
+.doodle-page {
+    width: 100%;
 }
 
+.live-status {
+    color: #708b6c;
 
-function openCharacterModal(item = null) {
+    font-size: 11px;
 
-    editingId = item ? item.id : null;
+    letter-spacing: 1px;
 
-
-    document.getElementById(
-        "modalContent"
-    ).innerHTML = `
-
-        <h2>
-            ${item ? "Edit character" : "Add character"}
-        </h2>
-
-        ${
-            item
-            ?
-            ""
-            :
-            `
-            <label class="form-label">
-                Photo
-            </label>
-
-            <input
-                id="characterFile"
-                class="file-input"
-                type="file"
-                accept="image/*"
-            >
-            `
-        }
-
-        <label class="form-label">
-            Name
-        </label>
-
-        <input
-            id="characterName"
-            type="text"
-            value="${item ? escapeAttribute(item.name) : ""}"
-            placeholder="Name"
-        >
-
-        <label class="form-label">
-            Role
-        </label>
-
-        <input
-            id="characterRole"
-            type="text"
-            value="${item ? escapeAttribute(item.role) : ""}"
-            placeholder="Girlfriend, boyfriend, best friend..."
-        >
-
-        <label class="form-label">
-            Description
-        </label>
-
-        <textarea
-            id="characterDescription"
-            placeholder="Tell us about them..."
-        >${item ? escapeHTML(item.description) : ""}</textarea>
-
-        <label class="form-label">
-            Favorite things
-        </label>
-
-        <input
-            id="characterFavorite"
-            type="text"
-            value="${item ? escapeAttribute(item.favorite) : ""}"
-            placeholder="Favorite food, song, habit..."
-        >
-
-        <button
-            class="primary-btn"
-            onclick="saveCharacter()"
-        >
-            Save character ♡
-        </button>
-
-    `;
-
-
-    openModal();
+    font-weight: 700;
 }
 
+.doodle-toolbar {
+    display: flex;
 
-async function editCharacter(id) {
+    align-items: center;
 
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("characters")
-            .select("*")
-            .eq("id", id)
-            .single();
+    flex-wrap: wrap;
 
+    gap: 25px;
 
-    if (!error) {
+    background: var(--white);
 
-        openCharacterModal(data);
+    padding: 18px 20px;
 
-    }
+    border-radius: 18px;
+
+    box-shadow: 0 8px 25px rgba(63,49,81,.05);
+
+    margin-bottom: 18px;
 }
 
+.tool-group {
+    display: flex;
 
-async function saveCharacter() {
+    align-items: center;
 
-    const name =
-        document
-            .getElementById("characterName")
-            .value
-            .trim();
-
-    const role =
-        document
-            .getElementById("characterRole")
-            .value
-            .trim();
-
-    const description =
-        document
-            .getElementById("characterDescription")
-            .value
-            .trim();
-
-    const favorite =
-        document
-            .getElementById("characterFavorite")
-            .value
-            .trim();
-
-
-    if (!name) {
-
-        showToast(
-            "Give your character a name."
-        );
-
-        return;
-    }
-
-
-    if (editingId) {
-
-        const {
-            error
-        } =
-            await supabaseClient
-                .from("characters")
-                .update({
-                    name,
-                    role,
-                    description,
-                    favorite
-                })
-                .eq("id", editingId);
-
-
-        if (error) {
-
-            showToast(error.message);
-
-            return;
-        }
-
-    } else {
-
-        const fileInput =
-            document.getElementById(
-                "characterFile"
-            );
-
-        const file =
-            fileInput.files[0];
-
-        let imagePath = null;
-
-
-        if (file) {
-
-            const path =
-                `${currentRoom.id}/characters/${crypto.randomUUID()}-${safeFileName(file.name)}`;
-
-
-            const {
-                error: uploadError
-            } =
-                await supabaseClient
-                    .storage
-                    .from("our-story")
-                    .upload(
-                        path,
-                        file,
-                        {
-                            cacheControl: "3600",
-                            upsert: false
-                        }
-                    );
-
-
-            if (uploadError) {
-
-                showToast(
-                    uploadError.message
-                );
-
-                return;
-            }
-
-
-            imagePath = path;
-
-        }
-
-
-        const {
-            error
-        } =
-            await supabaseClient
-                .from("characters")
-                .insert({
-
-                    room_id:
-                        currentRoom.id,
-
-                    name,
-
-                    role,
-
-                    description,
-
-                    favorite,
-
-                    image_path:
-                        imagePath,
-
-                    created_by:
-                        currentUser.id
-
-                });
-
-
-        if (error) {
-
-            if (imagePath) {
-
-                await deleteStorageFile(
-                    imagePath
-                );
-
-            }
-
-            showToast(error.message);
-
-            return;
-        }
-
-    }
-
-
-    closeModal();
-
-    await loadCharacters();
-
-    showToast("Character saved ♡");
+    gap: 10px;
 }
 
+.tool-label {
+    font-size: 12px;
 
-async function deleteCharacter(id) {
+    color: var(--muted);
+}
 
-    if (
-        !confirm(
-            "Delete this character?"
-        )
-    ) return;
+.color-palette {
+    display: flex;
 
+    gap: 7px;
+}
 
-    const {
-        data
-    } =
-        await supabaseClient
-            .from("characters")
-            .select("image_path")
-            .eq("id", id)
-            .single();
+.color-dot {
+    width: 25px;
 
+    height: 25px;
 
-    const {
-        error
-    } =
-        await supabaseClient
-            .from("characters")
-            .delete()
-            .eq("id", id);
+    border-radius: 50%;
 
+    border: 2px solid white;
 
-    if (error) {
+    box-shadow: 0 0 0 1px rgba(63,49,81,.15);
 
-        showToast(error.message);
+    padding: 0;
+}
 
-        return;
-    }
+.color-dot.active {
+    box-shadow:
+        0 0 0 2px var(--purple),
+        0 0 0 4px white;
+}
 
+.tool-buttons {
+    margin-left: auto;
+}
 
-    if (data?.image_path) {
+.tool-btn {
+    border: 1px solid rgba(112,87,126,.15);
 
-        await deleteStorageFile(
-            data.image_path
-        );
+    background: var(--cream);
 
-    }
+    color: var(--purple-dark);
 
+    border-radius: 9px;
 
-    await loadCharacters();
+    padding: 8px 12px;
 
-    showToast("Character deleted.");
+    font-size: 12px;
+}
+
+.tool-btn.active {
+    background: var(--lavender);
+}
+
+.tool-btn.danger {
+    color: #9b5365;
+}
+
+.canvas-wrapper {
+    position: relative;
+
+    width: 100%;
+
+    height: min(65vh, 650px);
+
+    min-height: 400px;
+
+    background: #fffdf9;
+
+    border-radius: 22px;
+
+    box-shadow: var(--shadow);
+
+    overflow: hidden;
+
+    border: 1px solid rgba(112,87,126,.1);
+}
+
+#doodleCanvas {
+    display: block;
+
+    width: 100%;
+
+    height: 100%;
+
+    touch-action: none;
+
+    cursor: crosshair;
+}
+
+.canvas-empty {
+    position: absolute;
+
+    pointer-events: none;
+
+    inset: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    color: rgba(112,87,126,.3);
+
+    font-family: "Caveat", cursive;
+
+    font-size: 28px;
 }
 
 
@@ -2159,1201 +1054,1648 @@ async function deleteCharacter(id) {
    CHAT
 ========================================================= */
 
-async function loadMessages() {
+.chat-box {
+    background: var(--white);
 
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("messages")
-            .select("*")
-            .eq("room_id", currentRoom.id)
-            .order("created_at", {
-                ascending: true
-            });
+    border-radius: 25px;
 
+    height: 70vh;
 
-    if (error) {
+    min-height: 450px;
 
-        console.error(error);
+    display: flex;
 
-        return;
-    }
+    flex-direction: column;
 
+    overflow: hidden;
 
-    renderMessages(data);
+    box-shadow: var(--shadow);
 }
 
+.messages {
+    flex: 1;
 
-function renderMessages(messages) {
+    overflow-y: auto;
 
-    const container =
-        document.getElementById(
-            "messages"
-        );
+    padding: 25px;
 
+    display: flex;
 
-    container.innerHTML =
-        messages.map(
-            message => {
+    flex-direction: column;
 
-                const mine =
-                    message.sender_id ===
-                    currentUser.id;
-
-
-                return `
-
-                    <div
-                        class="message-row ${mine ? "mine" : ""}"
-                    >
-
-                        <div class="chat-bubble">
-
-                            ${
-                                !mine
-                                ?
-                                `
-                                <div class="chat-sender">
-                                    ${escapeHTML(message.sender_name)}
-                                </div>
-                                `
-                                :
-                                ""
-                            }
-
-                            <div>
-                                ${escapeHTML(message.content)}
-                            </div>
-
-                            <div class="chat-time">
-                                ${formatTime(message.created_at)}
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                `;
-
-            }
-        ).join("");
-
-
-    scrollMessagesToBottom();
+    gap: 10px;
 }
 
-
-async function sendMessage(event) {
-
-    event.preventDefault();
-
-
-    const input =
-        document.getElementById(
-            "messageInput"
-        );
-
-
-    const content =
-        input.value.trim();
-
-
-    if (!content) return;
-
-
-    input.value = "";
-
-
-    const {
-        error
-    } =
-        await supabaseClient
-            .from("messages")
-            .insert({
-
-                room_id:
-                    currentRoom.id,
-
-                sender_id:
-                    currentUser.id,
-
-                sender_name:
-                    currentProfile?.display_name
-                    || "Someone",
-
-                content
-
-            });
-
-
-    if (error) {
-
-        showToast(
-            error.message
-        );
-
-        input.value = content;
-
-    }
+.message-row {
+    display: flex;
 }
 
+.message-row.mine {
+    justify-content: flex-end;
+}
 
-function scrollMessagesToBottom() {
+.chat-bubble {
+    max-width: min(70%, 500px);
 
-    const container =
-        document.getElementById(
-            "messages"
-        );
+    padding: 10px 14px;
 
+    border-radius: 16px;
 
-    if (container) {
+    background: var(--cream-dark);
 
-        container.scrollTop =
-            container.scrollHeight;
+    color: var(--text);
 
-    }
+    font-size: 14px;
+
+    line-height: 1.5;
+}
+
+.message-row.mine .chat-bubble {
+    background: var(--lavender);
+}
+
+.chat-sender {
+    font-size: 10px;
+
+    color: var(--purple);
+
+    margin-bottom: 3px;
+}
+
+.chat-time {
+    font-size: 9px;
+
+    color: var(--muted);
+
+    margin-top: 4px;
+
+    text-align: right;
+}
+
+.chat-input {
+    display: flex;
+
+    gap: 10px;
+
+    padding: 15px;
+
+    border-top: 1px solid rgba(112,87,126,.1);
+}
+
+.chat-input input {
+    margin: 0;
+
+    flex: 1;
+}
+
+.chat-input button {
+    border: 0;
+
+    background: var(--purple-dark);
+
+    color: white;
+
+    padding: 0 20px;
+
+    border-radius: 12px;
 }
 
 
 /* =========================================================
-   DOODLE CANVAS
+   CHARACTERS
 ========================================================= */
 
-function initializeCanvas() {
+.character-grid {
+    display: grid;
 
-    canvas =
-        document.getElementById(
-            "doodleCanvas"
+    grid-template-columns:
+        repeat(auto-fill, minmax(250px, 1fr));
+
+    gap: 22px;
+}
+
+.character-card {
+    background: var(--white);
+
+    border-radius: 22px;
+
+    overflow: hidden;
+
+    box-shadow: 0 8px 25px rgba(63,49,81,.06);
+}
+
+.character-image {
+    width: 100%;
+
+    aspect-ratio: 4 / 3;
+
+    object-fit: cover;
+
+    background: var(--cream-dark);
+
+    display: block;
+}
+
+.character-placeholder {
+    aspect-ratio: 4 / 3;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--lavender),
+            var(--cream-dark)
         );
 
-    if (!canvas) return;
+    display: flex;
 
+    align-items: center;
 
-    const rect =
-        canvas.getBoundingClientRect();
+    justify-content: center;
 
+    font-size: 55px;
 
-    const dpr =
-        window.devicePixelRatio || 1;
-
-
-    canvasWidth =
-        rect.width;
-
-    canvasHeight =
-        rect.height;
-
-
-    canvas.width =
-        rect.width * dpr;
-
-    canvas.height =
-        rect.height * dpr;
-
-
-    ctx =
-        canvas.getContext("2d");
-
-
-    ctx.scale(dpr, dpr);
-
-    ctx.lineCap = "round";
-
-    ctx.lineJoin = "round";
-
-
-    canvas.onpointerdown =
-        startDrawing;
-
-    canvas.onpointermove =
-        draw;
-
-    canvas.onpointerup =
-        finishDrawing;
-
-    canvas.onpointercancel =
-        finishDrawing;
-
-    canvas.onpointerleave =
-        finishDrawing;
-
-
-    redrawDoodle();
+    color: rgba(63,49,81,.3);
 }
 
-
-function getCanvasPosition(event) {
-
-    const rect =
-        canvas.getBoundingClientRect();
-
-
-    return {
-
-        x:
-            event.clientX -
-            rect.left,
-
-        y:
-            event.clientY -
-            rect.top
-
-    };
+.character-info {
+    padding: 20px;
 }
 
+.character-role {
+    font-size: 10px;
 
-function startDrawing(event) {
+    letter-spacing: 2px;
 
-    if (!canvas) return;
+    color: var(--pink);
 
-
-    isDrawing = true;
-
-    currentStroke = [];
-
-
-    const point =
-        getCanvasPosition(event);
-
-
-    currentStroke.push(point);
-
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-        point.x,
-        point.y
-    );
-
-    event.preventDefault();
+    text-transform: uppercase;
 }
 
+.character-info h3 {
+    font-family: "Playfair Display", serif;
 
-function draw(event) {
+    color: var(--purple-dark);
 
-    if (!isDrawing) return;
+    font-size: 25px;
 
-
-    const point =
-        getCanvasPosition(event);
-
-
-    currentStroke.push(point);
-
-
-    ctx.strokeStyle =
-        currentTool === "eraser"
-        ?
-        "#fffdf9"
-        :
-        currentBrushColor;
-
-
-    ctx.lineWidth =
-        currentBrushSize;
-
-
-    ctx.lineTo(
-        point.x,
-        point.y
-    );
-
-    ctx.stroke();
-
-
-    event.preventDefault();
+    margin: 5px 0 10px;
 }
 
+.character-info p {
+    font-size: 13px;
 
-async function finishDrawing() {
+    line-height: 1.7;
 
-    if (!isDrawing) return;
-
-
-    isDrawing = false;
-
-
-    if (
-        currentStroke.length < 2
-    ) {
-
-        currentStroke = [];
-
-        return;
-    }
-
-
-    const savedStroke = {
-
-        room_id:
-            currentRoom.id,
-
-        user_id:
-            currentUser.id,
-
-        color:
-            currentBrushColor,
-
-        brush_size:
-            currentBrushSize,
-
-        tool:
-            currentTool,
-
-        points:
-            currentStroke
-
-    };
-
-
-    const {
-        error
-    } =
-        await supabaseClient
-            .from("doodle_strokes")
-            .insert(
-                savedStroke
-            );
-
-
-    if (error) {
-
-        console.error(error);
-
-        showToast(
-            "Couldn't save the drawing."
-        );
-
-    }
-
-
-    currentStroke = [];
+    color: var(--muted);
 }
 
+.favorite-box {
+    padding: 10px 12px;
 
-async function loadDoodles() {
+    background: var(--cream);
 
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("doodle_strokes")
-            .select("*")
-            .eq("room_id", currentRoom.id)
-            .order("created_at", {
-                ascending: true
-            });
+    border-radius: 10px;
 
+    font-size: 12px;
 
-    if (error) {
-
-        console.error(error);
-
-        return;
-    }
-
-
-    window.loadedDoodles =
-        data || [];
-
-
-    redrawDoodle();
-}
-
-
-function redrawDoodle() {
-
-    if (!canvas || !ctx) return;
-
-
-    ctx.clearRect(
-        0,
-        0,
-        canvasWidth,
-        canvasHeight
-    );
-
-
-    const strokes =
-        window.loadedDoodles || [];
-
-
-    if (!strokes.length) {
-
-        document
-            .getElementById(
-                "canvasEmpty"
-            )
-            ?.classList.remove("hidden");
-
-    } else {
-
-        document
-            .getElementById(
-                "canvasEmpty"
-            )
-            ?.classList.add("hidden");
-
-    }
-
-
-    for (const stroke of strokes) {
-
-        drawStoredStroke(stroke);
-
-    }
-}
-
-
-function drawStoredStroke(stroke) {
-
-    if (
-        !stroke.points ||
-        stroke.points.length < 2
-    ) return;
-
-
-    ctx.beginPath();
-
-
-    const first =
-        stroke.points[0];
-
-
-    ctx.moveTo(
-        first.x,
-        first.y
-    );
-
-
-    for (
-        let i = 1;
-        i < stroke.points.length;
-        i++
-    ) {
-
-        const point =
-            stroke.points[i];
-
-
-        ctx.lineTo(
-            point.x,
-            point.y
-        );
-
-    }
-
-
-    ctx.strokeStyle =
-        stroke.tool === "eraser"
-        ?
-        "#fffdf9"
-        :
-        stroke.color;
-
-
-    ctx.lineWidth =
-        stroke.brush_size;
-
-
-    ctx.lineCap =
-        "round";
-
-    ctx.lineJoin =
-        "round";
-
-
-    ctx.stroke();
-}
-
-
-function setBrushColor(color) {
-
-    currentBrushColor =
-        color;
-
-
-    document
-        .querySelectorAll(".color-dot")
-        .forEach(dot => {
-
-            dot.classList.toggle(
-                "active",
-                dot.dataset.color === color
-            );
-
-        });
-
-
-    setTool("brush");
-}
-
-
-function updateBrushSize(size) {
-
-    currentBrushSize =
-        Number(size);
-
-
-    document
-        .getElementById(
-            "brushSizeLabel"
-        )
-        .textContent =
-        size + "px";
-}
-
-
-function setTool(tool) {
-
-    currentTool =
-        tool;
-
-
-    document
-        .getElementById(
-            "brushBtn"
-        )
-        .classList.toggle(
-            "active",
-            tool === "brush"
-        );
-
-
-    document
-        .getElementById(
-            "eraserBtn"
-        )
-        .classList.toggle(
-            "active",
-            tool === "eraser"
-        );
-}
-
-
-async function clearDoodle() {
-
-    if (
-        !confirm(
-            "Clear the whole canvas for both of you?"
-        )
-    ) return;
-
-
-    const {
-        error
-    } =
-        await supabaseClient
-            .from("doodle_strokes")
-            .delete()
-            .eq(
-                "room_id",
-                currentRoom.id
-            );
-
-
-    if (error) {
-
-        showToast(
-            error.message
-        );
-
-        return;
-    }
-
-
-    window.loadedDoodles = [];
-
-    redrawDoodle();
+    margin-top: 10px;
 }
 
 
 /* =========================================================
-   REALTIME
+   MODAL
 ========================================================= */
 
-function setupRealtime() {
+.modal-overlay {
+    position: fixed;
 
-    if (realtimeChannel) {
+    inset: 0;
 
-        supabaseClient
-            .removeChannel(
-                realtimeChannel
-            );
+    background: rgba(63,49,81,.4);
 
-    }
+    backdrop-filter: blur(5px);
 
+    z-index: 100;
 
-    if (doodleChannel) {
+    display: flex;
 
-        supabaseClient
-            .removeChannel(
-                doodleChannel
-            );
+    align-items: center;
 
-    }
+    justify-content: center;
 
+    padding: 20px;
+}
 
-    realtimeChannel =
-        supabaseClient
-            .channel(
-                "room-" +
-                currentRoom.id
-            )
+.modal {
+    width: min(600px, 100%);
 
+    max-height: 90vh;
 
-            .on(
-                "postgres_changes",
-                {
-                    event: "*",
-                    schema: "public",
-                    table: "messages",
-                    filter:
-                        `room_id=eq.${currentRoom.id}`
-                },
-                async () => {
+    overflow-y: auto;
 
-                    await loadMessages();
+    background: var(--white);
 
-                }
-            )
+    border-radius: 25px;
 
+    padding: 30px;
 
-            .on(
-                "postgres_changes",
-                {
-                    event: "*",
-                    schema: "public",
-                    table: "story_sections",
-                    filter:
-                        `room_id=eq.${currentRoom.id}`
-                },
-                async () => {
+    position: relative;
 
-                    await loadStory();
+    box-shadow: 0 30px 80px rgba(63,49,81,.25);
+}
 
-                }
-            )
+.modal h2 {
+    font-size: 28px;
 
+    margin-bottom: 22px;
+}
 
-            .on(
-                "postgres_changes",
-                {
-                    event: "*",
-                    schema: "public",
-                    table: "memories",
-                    filter:
-                        `room_id=eq.${currentRoom.id}`
-                },
-                async () => {
+.modal-close {
+    position: absolute;
 
-                    await loadMemories();
+    right: 18px;
 
-                }
-            )
+    top: 15px;
 
+    width: 35px;
 
-            .on(
-                "postgres_changes",
-                {
-                    event: "*",
-                    schema: "public",
-                    table: "journal_entries",
-                    filter:
-                        `room_id=eq.${currentRoom.id}`
-                },
-                async () => {
+    height: 35px;
 
-                    await loadJournal();
+    border: 0;
 
-                }
-            )
+    border-radius: 50%;
 
+    background: var(--cream-dark);
 
-            .on(
-                "postgres_changes",
-                {
-                    event: "*",
-                    schema: "public",
-                    table: "characters",
-                    filter:
-                        `room_id=eq.${currentRoom.id}`
-                },
-                async () => {
+    color: var(--purple-dark);
 
-                    await loadCharacters();
+    font-size: 22px;
+}
 
-                }
-            )
+.form-label {
+    display: block;
 
+    font-size: 11px;
 
-            .subscribe();
+    color: var(--purple);
 
+    letter-spacing: 1px;
 
-    doodleChannel =
-        supabaseClient
-            .channel(
-                "doodle-" +
-                currentRoom.id
-            )
+    margin: 15px 0 7px;
+}
 
+.file-input {
+    background: var(--cream);
 
-            .on(
-                "postgres_changes",
-                {
-                    event: "*",
-                    schema: "public",
-                    table: "doodle_strokes",
-                    filter:
-                        `room_id=eq.${currentRoom.id}`
-                },
-                async () => {
-
-                    await loadDoodles();
-
-                }
-            )
-
-
-            .subscribe();
-
+    padding: 10px;
 }
 
 
 /* =========================================================
-   STORAGE
+   TOAST
 ========================================================= */
 
-async function getSignedUrl(path) {
+.toast {
+    position: fixed;
 
-    if (!path) return null;
+    bottom: 25px;
 
+    right: 25px;
 
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .storage
-            .from("our-story")
-            .createSignedUrl(
-                path,
-                60 * 60
-            );
+    background: var(--purple-dark);
 
+    color: white;
 
-    if (error) {
+    padding: 12px 17px;
 
-        console.error(error);
+    border-radius: 12px;
 
-        return null;
-    }
+    box-shadow: var(--shadow);
 
+    transform: translateY(100px);
 
-    return data.signedUrl;
+    opacity: 0;
+
+    transition: .3s;
+
+    z-index: 200;
+
+    font-size: 13px;
 }
 
+.toast.show {
+    transform: translateY(0);
 
-async function deleteStorageFile(path) {
-
-    if (!path) return;
-
-
-    const {
-        error
-    } =
-        await supabaseClient
-            .storage
-            .from("our-story")
-            .remove([
-                path
-            ]);
-
-
-    if (error) {
-
-        console.error(
-            "Storage deletion error:",
-            error
-        );
-
-    }
+    opacity: 1;
 }
 
 
 /* =========================================================
-   MODALS
+   RESPONSIVE
 ========================================================= */
 
-function openModal() {
+@media (max-width: 900px) {
 
-    document
-        .getElementById(
-            "modalOverlay"
-        )
-        .classList.remove("hidden");
-}
+    .sidebar {
+        width: 75px;
 
-
-function closeModal() {
-
-    document
-        .getElementById(
-            "modalOverlay"
-        )
-        .classList.add("hidden");
-
-
-    editingId = null;
-}
-
-
-function closeModalOnOverlay(event) {
-
-    if (
-        event.target.id ===
-        "modalOverlay"
-    ) {
-
-        closeModal();
-
+        padding: 20px 8px;
     }
+
+    .nav-btn {
+        text-align: center;
+
+        font-size: 0;
+    }
+
+    .nav-btn span {
+        font-size: 20px;
+
+        width: auto;
+    }
+
+    .little-note {
+        display: none;
+    }
+
+    .content {
+        padding: 30px 20px;
+    }
+
+    .home-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+}
+
+
+@media (max-width: 650px) {
+
+    .topbar {
+        padding: 0 15px;
+    }
+
+    .room-info span {
+        display: none;
+    }
+
+    .brand {
+        font-size: 23px;
+    }
+
+    .content {
+        padding: 25px 14px;
+    }
+
+    .hero-card {
+        padding: 35px 20px;
+
+        min-height: 300px;
+    }
+
+    .home-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .page-heading {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+    .doodle-toolbar {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+    .tool-buttons {
+        margin-left: 0;
+    }
+
+    .canvas-wrapper {
+        height: 60vh;
+
+        min-height: 350px;
+    }
+
+    .chat-bubble {
+        max-width: 85%;
+    }
+
+    .auth-card,
+    .room-card {
+        padding: 30px 20px;
+    }
+
+}
+
+/* =========================================================
+   CHRONOLOGICAL MEMORY SCRAPBOOK
+========================================================= */
+
+#memoryGrid {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 285px), 1fr));
+    gap: 28px 24px;
+    padding: 8px 0 20px 16px;
+}
+
+#memoryGrid::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 18px;
+    bottom: 25px;
+    width: 2px;
+    border-radius: 2px;
+    background: linear-gradient(to bottom, var(--lavender), rgba(217,201,220,0.12));
+}
+
+.memory-card {
+    position: relative;
+    min-width: 0;
+    border: 1px solid rgba(112,87,126,.09);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.memory-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow);
+}
+
+.memory-timeline-dot {
+    position: absolute;
+    z-index: 2;
+    left: -22px;
+    top: 22px;
+    width: 13px;
+    height: 13px;
+    border: 3px solid var(--cream);
+    border-radius: 50%;
+    background: var(--pink);
+    box-shadow: 0 0 0 2px var(--lavender);
+}
+
+.memory-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3px;
+    background: var(--cream-dark);
+    overflow: hidden;
+}
+
+.memory-photo-grid.one-photo {
+    grid-template-columns: 1fr;
+}
+
+.memory-photo-button {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: var(--cream-dark);
+    overflow: hidden;
+    cursor: zoom-in;
+}
+
+.memory-photo-button:first-child:nth-last-child(n+3) {
+    grid-column: span 2;
+}
+
+.memory-photo-button .memory-image {
+    width: 100%;
+    height: 170px;
+    aspect-ratio: auto;
+    object-fit: cover;
+    display: block;
+    transition: transform .25s ease, filter .25s ease;
+}
+
+.memory-photo-grid.one-photo .memory-image {
+    height: 250px;
+}
+
+.memory-photo-button:hover .memory-image {
+    transform: scale(1.035);
+    filter: saturate(1.04);
+}
+
+.memory-no-photo {
+    width: 100%;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: linear-gradient(135deg, var(--lavender), var(--cream-dark));
+    color: var(--purple);
+    font-family: "Caveat", cursive;
+    font-size: 48px;
+    cursor: pointer;
+}
+
+.memory-no-photo span {
+    font-family: "DM Sans", sans-serif;
+    font-size: 12px;
+}
+
+.memory-info p {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.memory-photo-count,
+.memory-modal-hint,
+.existing-photo-note {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.memory-photo-count {
+    margin-top: 10px;
+    color: var(--purple);
+}
+
+.memory-modal-hint {
+    margin: -8px 0 10px;
+}
+
+.existing-photo-note {
+    margin: -4px 0 12px;
+    color: var(--purple);
+}
+
+.photo-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 55px 24px 25px;
+    background: rgba(31, 23, 39, .92);
+    backdrop-filter: blur(8px);
+}
+
+.photo-lightbox.hidden {
+    display: none !important;
+}
+
+.photo-lightbox > img {
+    display: block;
+    max-width: min(1100px, 100%);
+    max-height: 78vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 12px;
+    box-shadow: 0 20px 80px rgba(0,0,0,.3);
+}
+
+.photo-lightbox > p {
+    color: #fffafc;
+    font-family: "Caveat", cursive;
+    font-size: 24px;
+    margin: 0;
+    text-align: center;
+}
+
+.photo-lightbox-close {
+    position: absolute;
+    top: 18px;
+    right: 22px;
+    width: 44px;
+    height: 44px;
+    border: 1px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    background: rgba(255,255,255,.12);
+    color: white;
+    font-size: 30px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+body.lightbox-open {
+    overflow: hidden;
+}
+
+@media (max-width: 650px) {
+    #memoryGrid {
+        padding-left: 13px;
+        gap: 22px 14px;
+    }
+
+    #memoryGrid::before {
+        left: 2px;
+    }
+
+    .memory-timeline-dot {
+        left: -18px;
+    }
+
+    .memory-photo-button .memory-image {
+        height: 135px;
+    }
+
+    .memory-photo-grid.one-photo .memory-image {
+        height: 220px;
+    }
+
+    .photo-lightbox {
+        padding: 60px 12px 20px;
+    }
+}
+
+
+.memory-edit-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+    gap: 10px;
+    margin: 10px 0 18px;
+}
+
+.memory-edit-photo {
+    min-width: 0;
+    border: 1px solid rgba(112,87,126,.16);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--cream);
+}
+
+.memory-edit-photo > img,
+.memory-edit-photo-missing {
+    width: 100%;
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    object-fit: cover;
+    background: var(--cream-dark);
+    color: var(--purple);
+    font-size: 28px;
+}
+
+.memory-remove-choice {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 6px;
+    font-size: 10px;
+    color: var(--muted);
+}
+
+.memory-remove-choice input {
+    width: auto;
+    margin: 0;
+    accent-color: var(--pink);
 }
 
 
 /* =========================================================
-   HELPERS
+   COUPLE SCRAPBOOK — WARM, MUTED, LESS PINK
 ========================================================= */
-
-function showMessage(
-    elementId,
-    message
-) {
-
-    const element =
-        document.getElementById(
-            elementId
-        );
-
-
-    if (element) {
-
-        element.textContent =
-            message;
-
-    }
+:root {
+  --purple-dark: #40394f;
+  --purple: #746982;
+  --purple-light: #aaa0b7;
+  --lavender: #e3dfe8;
+  --cream: #f3efe7;
+  --cream-dark: #e9e3d8;
+  --white: #fffdf8;
+  --text: #403d3b;
+  --muted: #89827c;
+  --pink: #9b8b82;
+  --sage: #aab5a0;
+  --shadow: 0 16px 42px rgba(65, 57, 72, .09);
+  --radius: 24px;
 }
-
-
-function clearMessage(
-    elementId
-) {
-
-    const element =
-        document.getElementById(
-            elementId
-        );
-
-
-    if (element) {
-
-        element.textContent = "";
-
-    }
+body {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(190,181,200,.24), transparent 32%),
+    radial-gradient(circle at 88% 82%, rgba(170,181,160,.16), transparent 28%),
+    repeating-linear-gradient(0deg, rgba(110,96,80,.018) 0, rgba(110,96,80,.018) 1px, transparent 1px, transparent 5px),
+    var(--cream);
 }
-
-
-function showToast(message) {
-
-    const toast =
-        document.getElementById(
-            "toast"
-        );
-
-
-    toast.textContent =
-        message;
-
-
-    toast.classList.add(
-        "show"
-    );
-
-
-    clearTimeout(
-        window.toastTimer
-    );
-
-
-    window.toastTimer =
-        setTimeout(
-            () => {
-
-                toast.classList.remove(
-                    "show"
-                );
-
-            },
-            2500
-        );
+.auth-card, .room-card, .hero-card, .home-card, .story-card, .memory-card,
+.journal-card, .character-card, .screenshots-lock, .screenshot-card {
+  border: 1px solid rgba(93,82,99,.11);
+  box-shadow: 0 12px 32px rgba(65,57,72,.075);
 }
-
-
-function emptyState(
-    title,
-    subtitle
-) {
-
-    return `
-
-        <div
-            style="
-                grid-column:1/-1;
-                text-align:center;
-                padding:70px 20px;
-                color:#877d88;
-            "
-        >
-
-            <div
-                style="
-                    font-size:40px;
-                    color:#a88caf;
-                    margin-bottom:10px;
-                "
-            >
-                ♡
-            </div>
-
-            <h3
-                style="
-                    color:#3f3151;
-                    margin:0 0 5px;
-                "
-            >
-                ${escapeHTML(title)}
-            </h3>
-
-            <p>
-                ${escapeHTML(subtitle)}
-            </p>
-
-        </div>
-
-    `;
+.hero-card {
+  background: linear-gradient(135deg, #e7e1e9 0%, #f8f4eb 58%, #e7e9df 100%);
+  position: relative;
+  overflow: hidden;
 }
-
-
-function formatDate(date) {
-
-    if (!date) return "";
-
-    const d =
-        new Date(
-            date + "T00:00:00"
-        );
-
-
-    return d.toLocaleDateString(
-        undefined,
-        {
-            day: "numeric",
-            month: "long",
-            year: "numeric"
-        }
-    );
+.hero-card::after {
+  content: "♡"; position: absolute; right: 7%; bottom: -38px;
+  font-family: Georgia,serif; font-size: 190px; color: rgba(116,105,130,.07);
+  transform: rotate(-13deg); pointer-events: none;
 }
-
-
-function formatTime(date) {
-
-    return new Date(
-        date
-    ).toLocaleTimeString(
-        undefined,
-        {
-            hour: "numeric",
-            minute: "2-digit"
-        }
-    );
+.primary-btn { background: #51485f; }
+.primary-btn:hover { background: #71677e; }
+.secondary-btn { background: #e3dfe8; color: #40394f; }
+.nav-btn.active { background: #e5e0e8; color: #40394f; }
+.home-card { background: rgba(255,253,248,.82); }
+.home-card:hover { border-color: rgba(116,105,130,.32); transform: translateY(-3px); }
+.story-card { background: linear-gradient(145deg, #fffdf8, #f2eee8); border-radius: 20px; }
+.memory-card { background: #fffdf8; }
+.eyebrow { letter-spacing: .18em; color: #81768b; }
+.page-subtitle { color: var(--muted); line-height: 1.7; margin: -8px 0 22px; }
+.screenshots-lock {
+  max-width: 490px; margin: 34px auto; padding: 42px 36px; text-align: center;
+  border-radius: 28px; background: linear-gradient(145deg,#fffdf8,#eeebf0);
 }
-
-
-function safeFileName(name) {
-
-    return name
-        .replace(
-            /[^a-zA-Z0-9._-]/g,
-            "_"
-        )
-        .slice(0, 100);
-}
-
-
-function escapeHTML(value) {
-
-    if (value === null ||
-        value === undefined) {
-
-        return "";
-
-    }
-
-
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
-
-function escapeAttribute(value) {
-
-    return escapeHTML(value);
-}
+.lock-illustration { width: 66px; height: 66px; display:grid; place-items:center; margin:0 auto 18px;
+  border-radius: 50%; background:#e3dfe8; color:#62576f; font-size:30px; }
+.screenshots-lock h3 { font: 25px Georgia,serif; margin: 8px 0; color:#40394f; }
+.screenshots-lock p { color:var(--muted); line-height:1.6; }
+.screenshots-lock .primary-btn { margin-top:8px; }
+.lock-message { min-height:20px; font-size:13px; color:#8a625d !important; }
+.screenshots-toolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:20px 0; }
+.screenshots-toolbar p { color:var(--muted); line-height:1.6; }
+.screenshots-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:20px; }
+.screenshot-card { background:#fffdf8; padding:12px; border-radius:18px; }
+.screenshot-image-button { border:0; padding:0; background:transparent; width:100%; }
+.screenshot-image-button img { width:100%; max-height:300px; object-fit:contain; border-radius:12px; background:#eeeae4; display:block; }
+.screenshot-card-caption { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.screenshot-card-caption p { overflow-wrap:anywhere; color:var(--text); }
+.screenshot-card time { color:var(--muted); font-size:12px; }
+@media(max-width:600px) { .screenshots-toolbar {align-items:stretch; flex-direction:column;} .screenshots-lock {padding:30px 22px;} }
 
 
 /* =========================================================
-   RESIZE CANVAS
+   THE TWO OF US — STRUCTURAL REDESIGN
+   playful dark-vintage scrapbook, not just a palette swap
 ========================================================= */
+:root{
+ --ink:#29263a; --plum:#514064; --berry:#a94f69; --berry-deep:#78384f;
+ --lav:#b7a0d2; --lilac:#e4d9f1; --butter:#f1d889; --sage:#a9b89b;
+ --paper:#fff9ed; --paper2:#f4eadb; --line:rgba(52,43,62,.15);
+ --text:#302b3b; --muted:#766d7c; --pink:#c77c91;
+ --shadow:0 18px 48px rgba(39,31,49,.12); --radius:24px;
+}
+body{color:var(--text);background-color:#e9e1d8;background-image:radial-gradient(rgba(81,64,100,.12) .7px,transparent .7px),linear-gradient(135deg,#f4eddf 0%,#e8e0ee 52%,#e9e6d9 100%);background-size:9px 9px,100% 100%;}
+#app{min-height:100vh;background:transparent;}
+.topbar{background:var(--ink);color:#fff8ec;border-bottom:4px solid var(--butter);box-shadow:0 7px 0 rgba(41,38,58,.08);padding:16px 30px;}
+.brand{font-family:'Cormorant Garamond',serif;font-size:27px;letter-spacing:.3px;color:#fff8ec}.brand span:first-child{color:var(--butter)}
+.room-info{color:#e9dff2}.tiny-btn{background:#685575;color:#fff8ec;border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:8px 14px}
+.app-layout{max-width:1600px;margin:0 auto;gap:22px;padding:22px;align-items:start;}
+.sidebar{position:sticky;top:18px;background:var(--paper);border:1px solid var(--line);border-radius:25px;padding:17px 13px;box-shadow:var(--shadow);min-height:calc(100vh - 145px);}
+.sidebar:before{content:'OUR LITTLE UNIVERSE';display:block;font-size:9px;letter-spacing:2px;font-weight:800;color:var(--berry);padding:5px 11px 15px;}
+.nav-btn{border-radius:13px;margin:4px 0;padding:12px 13px;color:#62596b;font-weight:650;transition:.18s;}
+.nav-btn span{display:inline-grid;place-items:center;width:27px;height:27px;margin-right:8px;border-radius:9px;background:#eee5f5;color:var(--plum);font-size:16px;}
+.nav-btn:hover{background:#f4ecdf;transform:translateX(3px)}.nav-btn.active{background:var(--ink);color:#fff8ec;box-shadow:3px 4px 0 var(--butter)}.nav-btn.active span{background:var(--butter);color:var(--ink)}
+.sidebar-bottom{border-top:1px dashed #cbbdd0;margin-top:20px;padding-top:14px}.little-note{font-family:Caveat,cursive;font-size:21px;color:var(--berry);transform:rotate(-3deg)}
+.content{padding:12px 18px 48px;max-width:1200px;}
+.page-heading h2,.home-section-heading h2{font-family:'Cormorant Garamond',serif;font-size:43px;letter-spacing:-.8px;color:var(--ink)}
+.eyebrow{font-size:10px;letter-spacing:2.1px;font-weight:800;color:var(--berry);}
+.page-subtitle{color:var(--muted)}
+/* Home page gets a completely new editorial composition */
+.home-welcome-row{display:flex;justify-content:space-between;align-items:center;gap:25px;margin:8px 0 24px;padding:12px 5px;}
+.home-greeting{font:600 clamp(42px,5.3vw,68px)/.98 'Cormorant Garamond',serif;color:var(--ink);letter-spacing:-1.5px;margin:8px 0 12px;}
+.home-greeting em,.home-feature-card h2 em{color:var(--berry);font-style:italic;}
+.home-intro{max-width:570px;color:#716779;font-size:14px;line-height:1.8;margin:0;}
+.date-stamp{width:142px;height:142px;flex:0 0 142px;border:1.5px dashed var(--berry);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(8deg);color:var(--berry);background:rgba(255,249,237,.72);box-shadow:inset 0 0 0 7px rgba(169,79,105,.06);}
+.date-stamp span{font-size:9px;letter-spacing:3px;font-weight:800}.date-stamp strong{font:700 44px 'Cormorant Garamond',serif;color:var(--ink)}.date-stamp small{font:14px Caveat,cursive;text-align:center;max-width:110px;line-height:1.1}
+.home-feature-layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(190px,.75fr);gap:19px;margin-bottom:38px;}
+.home-feature-card{position:relative;overflow:hidden;min-height:300px;padding:29px 34px;border-radius:26px;background:var(--ink);color:#fff8ed;box-shadow:8px 9px 0 #c4b2d1;}
+.home-feature-card:after{content:'✳';position:absolute;right:22px;bottom:-68px;font-size:240px;color:rgba(241,216,137,.11);transform:rotate(-14deg);pointer-events:none;}
+.feature-topline{display:flex;justify-content:space-between;align-items:center}.sticker-label{background:var(--butter);color:var(--ink);padding:7px 12px;border-radius:4px;font-size:9px;font-weight:900;letter-spacing:1.8px;transform:rotate(-2deg)}.feature-scribble{font-size:30px;color:var(--lav)}
+.feature-kicker{margin:30px 0 5px;font-size:10px;letter-spacing:2px;color:#d6c8e1;font-weight:800}.home-feature-card h2{font:600 clamp(37px,4vw,55px)/.98 'Cormorant Garamond',serif;margin:0 0 13px;max-width:500px}.home-feature-card h2 em{color:var(--butter)}
+.home-feature-card>p:not(.feature-kicker){max-width:520px;color:#e3dce8;font-size:13px;line-height:1.8;position:relative;z-index:1}.feature-link{position:relative;z-index:2;margin-top:14px;background:transparent;border:0;border-bottom:1px solid var(--butter);padding:8px 0;color:var(--butter);font-size:10px;font-weight:900;letter-spacing:1.6px}.feature-link span{font-size:17px;margin-left:8px}.feature-doodle{position:absolute;color:#f1d889}.doodle-heart{right:40px;top:90px;font-size:48px;transform:rotate(12deg)}.doodle-star{right:115px;bottom:30px;font-size:25px}
+.home-side-stack{display:flex;flex-direction:column;gap:15px}.polaroid-note{background:#fffdf7;padding:12px 13px 13px;box-shadow:4px 6px 0 rgba(41,38,58,.12);transform:rotate(2.5deg);text-align:center;border:1px solid #e9dfd1}.polaroid-art{height:105px;background:repeating-linear-gradient(135deg,#d9cde8 0 10px,#e9e0f0 10px 20px);display:grid;place-items:center;font:700 42px 'Cormorant Garamond',serif;color:var(--plum);position:relative}.polaroid-art span{position:absolute;right:15px;top:10px;font-size:19px;color:var(--berry)}.polaroid-note p{font:20px/1.05 Caveat,cursive;margin:10px 0 4px;color:var(--ink)}.polaroid-note small{font-size:9px;letter-spacing:1px;color:var(--berry);text-transform:uppercase}
+.tiny-manifesto{position:relative;background:#dce4d5;border-radius:16px;padding:15px 18px;transform:rotate(-1.5deg);border:1px solid #c2cfb9}.tiny-manifesto span{font-size:9px;letter-spacing:2px;font-weight:900;color:#53664c}.tiny-manifesto p{font:20px/1.15 Caveat,cursive;color:#344333;margin:7px 0 0}.tiny-manifesto b{position:absolute;right:17px;bottom:10px;color:var(--berry);font-size:23px}
+.home-section-heading{display:flex;align-items:end;justify-content:space-between;margin:0 0 15px}.home-section-heading h2{font-size:35px;margin:3px 0 0}.handwritten{font:19px Caveat,cursive;color:var(--berry);transform:rotate(-3deg)}
+.home-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;}
+.home-card{position:relative;min-height:185px;padding:20px 19px 17px;border:1px solid var(--line);border-radius:18px;cursor:pointer;box-shadow:0 5px 0 rgba(41,38,58,.08);transition:transform .2s,box-shadow .2s;overflow:hidden;}
+.home-card:hover{transform:translateY(-5px) rotate(-.5deg);box-shadow:0 11px 0 rgba(41,38,58,.09)}
+.home-card small{display:block;font-size:8px;letter-spacing:1.7px;font-weight:900;opacity:.72;margin:7px 0 13px}.home-card h3{font:600 30px/1 'Cormorant Garamond',serif;margin:0 0 7px}.home-card p{font-size:11px;line-height:1.6;max-width:230px;margin:0 0 16px;opacity:.82}.home-card>b{font-size:8px;letter-spacing:1.2px}.card-icon{position:absolute;right:15px;top:12px;font-size:27px;opacity:.8}
+.card-story{background:#e8def2;color:#40334f}.card-memories{background:#f3e4bf;color:#55452d}.card-screenshots{background:#d9e2d2;color:#354536}.card-journal{background:#f0d9d8;color:#5d3744}.card-doodle{background:#d9e7ec;color:#344d59}.card-chat{background:#e7dce8;color:#51405b}
+.home-footer-note{display:flex;align-items:center;justify-content:center;gap:13px;margin:30px auto 0;color:#86778a;font:18px Caveat,cursive}.home-footer-note span{color:var(--berry)}
+/* Story timeline cards: clearer scrapbook chapters */
+.story-list{position:relative;max-width:900px;margin:28px auto 0;padding:8px 0 8px 34px;border-left:2px dashed #b6a2c4;}
+.story-card{position:relative;background:var(--paper);border:1px solid rgba(81,64,100,.14);border-radius:8px 22px 22px 22px;padding:22px 25px;margin:0 0 22px;box-shadow:5px 6px 0 rgba(81,64,100,.09);}
+.story-card:before{content:'♡';position:absolute;left:-48px;top:20px;width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:var(--berry);color:white;border:4px solid #eee6ed;font-size:14px;}
+.story-card:nth-child(even){transform:rotate(.35deg);background:#f3edf8}.story-card:nth-child(odd){transform:rotate(-.25deg)}.story-card h3{font:600 29px 'Cormorant Garamond',serif;color:var(--ink)}.story-card p{line-height:1.8;color:#665d6c}
+/* Shared component polish */
+.auth-card,.room-card{background:var(--paper);border:1px solid var(--line);box-shadow:10px 11px 0 rgba(81,64,100,.13);border-radius:10px 28px 28px 28px;}
+.primary-btn{background:var(--berry-deep);border-radius:999px}.primary-btn:hover{background:var(--plum)}.secondary-btn{background:var(--lilac);border-radius:999px}.home-card,.memory-card,.journal-card,.character-card{border-color:var(--line)}
+@media(max-width:900px){.app-layout{display:block;padding:12px}.sidebar{position:relative;min-height:0;display:flex;flex-wrap:wrap;gap:5px;margin-bottom:15px}.sidebar:before,.sidebar-bottom{display:none}.nav-btn{width:auto;flex:1 1 130px;margin:0}.content{padding:10px 4px 35px}.home-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.topbar{padding:13px 16px}.brand{font-size:22px}.room-info{gap:5px}.app-layout{padding:9px}.home-welcome-row{align-items:flex-start}.date-stamp{width:92px;height:92px;flex-basis:92px}.date-stamp strong{font-size:31px}.date-stamp small{font-size:11px}.home-feature-layout{grid-template-columns:1fr}.home-side-stack{display:grid;grid-template-columns:1fr 1fr}.home-feature-card{padding:23px;min-height:290px}.home-grid{grid-template-columns:1fr 1fr;gap:9px}.home-card{padding:15px 13px;min-height:170px}.home-card h3{font-size:25px}.home-card p{font-size:10px}.home-section-heading{align-items:start;gap:8px;flex-direction:column}.handwritten{align-self:flex-end}.story-list{margin-left:5px;padding-left:26px}.story-card{padding:17px}.story-card:before{left:-40px}}
 
-window.addEventListener(
-    "resize",
-    () => {
+/* =========================================================
+   COLOR PASS — MIDNIGHT BLUE, VIOLET & CHERRY RED
+   brighter, cuter and more colorful; no muddy charcoal
+========================================================= */
+:root{
+ --ink:#25294f;
+ --plum:#5542a5;
+ --berry:#d83d68;
+ --berry-deep:#a92550;
+ --lav:#a99af5;
+ --lilac:#e5e0ff;
+ --butter:#9bdcf4;
+ --sage:#a9c8d8;
+ --paper:#fbf9ff;
+ --paper2:#f0edff;
+ --line:rgba(64,57,132,.18);
+ --text:#302d50;
+ --muted:#77739b;
+ --pink:#e77b9b;
+ --shadow:0 18px 48px rgba(49,47,112,.14);
+}
+body{
+ color:var(--text);
+ background-color:#e9e8ff;
+ background-image:
+  radial-gradient(rgba(92,75,176,.13) .8px,transparent .8px),
+  linear-gradient(132deg,#e9f2ff 0%,#e9e1ff 43%,#f8e5ee 100%);
+ background-size:10px 10px,100% 100%;
+}
+.topbar{background:linear-gradient(105deg,#25294f 0%,#41347f 58%,#702d62 100%);border-bottom:4px solid #8ed8f3;box-shadow:0 7px 0 rgba(55,48,124,.12)}
+.brand span:first-child{color:#9bdcf4}
+.tiny-btn{background:#574a9a;color:#fff;border-color:rgba(255,255,255,.28)}
+.sidebar{background:linear-gradient(160deg,#fffaff,#f0edff 70%,#e8efff);border-color:#d8d2fa}
+.sidebar:before{color:#d83d68}
+.nav-btn{color:#514d7d}
+.nav-btn span{background:#e2e7ff;color:#5542a5}
+.nav-btn:hover{background:#fce7f0}
+.nav-btn.active{background:linear-gradient(110deg,#34366f,#6245a4);color:#fff;box-shadow:3px 4px 0 #8ed8f3}
+.nav-btn.active span{background:#9bdcf4;color:#25294f}
+.sidebar-bottom{border-color:#c9c4ef}
+.little-note,.handwritten{color:#d83d68}
+.page-heading h2,.home-section-heading h2,.home-greeting{color:#25294f}
+.eyebrow{color:#c33361}
+.page-subtitle,.home-intro{color:#66648c}
+.date-stamp{border-color:#d83d68;color:#a92550;background:rgba(255,250,255,.9);box-shadow:inset 0 0 0 7px rgba(169,154,245,.14)}
+.date-stamp strong{color:#25294f}
+.home-feature-card{background:linear-gradient(135deg,#25294f 0%,#41347f 58%,#782e67 100%);box-shadow:8px 9px 0 #b7a9f2}
+.home-feature-card:after{color:rgba(155,220,244,.15)}
+.sticker-label{background:#9bdcf4;color:#25294f}
+.feature-scribble,.feature-doodle{color:#b9adff}
+.home-feature-card h2 em{color:#ff91b0}
+.feature-link{border-color:#9bdcf4;color:#9bdcf4}
+.polaroid-note{background:#fffaff;border-color:#ded7f7;box-shadow:4px 6px 0 rgba(65,52,127,.16)}
+.polaroid-art{background:repeating-linear-gradient(135deg,#c9c0ff 0 10px,#e4ddff 10px 20px);color:#41347f}
+.polaroid-art span,.polaroid-note small{color:#d83d68}
+.polaroid-note p{color:#25294f}
+.tiny-manifesto{background:#dff2ff;border-color:#b6dff3}
+.tiny-manifesto span{color:#365b83}.tiny-manifesto p{color:#293b61}.tiny-manifesto b{color:#d83d68}
+.home-card{border-color:rgba(75,65,150,.18);box-shadow:0 5px 0 rgba(55,48,124,.1)}
+.home-card:hover{box-shadow:0 11px 0 rgba(55,48,124,.12)}
+.card-story{background:linear-gradient(145deg,#e4ddff,#d6dfff);color:#37336f}
+.card-memories{background:linear-gradient(145deg,#ffe0e9,#f8cbd9);color:#762b4a}
+.card-screenshots{background:linear-gradient(145deg,#d8efff,#c8e4fa);color:#294b73}
+.card-journal{background:linear-gradient(145deg,#f0ddff,#e2d1f7);color:#563b7c}
+.card-doodle{background:linear-gradient(145deg,#d8f2f7,#c8e5f0);color:#28546a}
+.card-chat{background:linear-gradient(145deg,#f8dce9,#eed3ff);color:#63345e}
+.home-footer-note{color:#74709a}.home-footer-note span{color:#d83d68}
+.story-list{border-left-color:#a99af5}
+.story-card{background:#fffaff;border-color:rgba(85,66,165,.18);box-shadow:5px 6px 0 rgba(85,66,165,.11)}
+.story-card:before{background:#d83d68;border-color:#eeeaff;color:#fff}
+.story-card:nth-child(even){background:#f0edff}
+.story-card:nth-child(odd){background:#fff5f8}
+.story-card h3{color:#25294f}.story-card p{color:#5e5b80}
+.auth-card,.room-card{background:linear-gradient(145deg,#fffaff,#f0edff);border-color:#d9d2f8;box-shadow:10px 11px 0 rgba(85,66,165,.13)}
+.primary-btn{background:linear-gradient(100deg,#5142a0,#9e315e);color:#fff;border-radius:999px}
+.primary-btn:hover{background:linear-gradient(100deg,#392f80,#c13c68)}
+.secondary-btn{background:#e2e0ff;color:#40377e;border-radius:999px}
+.memory-card,.journal-card,.character-card,.screenshot-card{background:#fffaff;border-color:#ded8f7;box-shadow:0 8px 24px rgba(64,57,132,.09)}
+.screenshots-lock{background:linear-gradient(145deg,#fffaff,#e9e5ff);border:1px solid #d8d0fa;box-shadow:0 12px 32px rgba(64,57,132,.12)}
+.lock-illustration{background:#dedbff;color:#5542a5}
+.screenshots-lock h3{color:#25294f}
+.lock-message{color:#b52d58!important}
+.screenshot-image-button img{background:#e8eaff}
+input,textarea,select{border-color:#d5d0f2!important;background:#fffaff!important;color:#302d50!important}
+input:focus,textarea:focus,select:focus{outline:2px solid #a99af5!important;border-color:#7765cf!important}
+@media(max-width:600px){.home-feature-card{background:linear-gradient(145deg,#25294f,#493c91 62%,#782e67)}}
 
-        if (
-            document
-                .getElementById(
-                    "page-doodle"
-                )
-                ?.classList.contains(
-                    "active-page"
-                )
-        ) {
+/* =========================================================
+   MIDNIGHT MODE — deep blue / ink / plum, soft berry accents
+   Dark is the default; the header toggle switches to the
+   existing brighter palette.
+========================================================= */
+body.dark-theme {
+  color:#e9e7ff;
+  background-color:#101323;
+  background-image:
+    radial-gradient(rgba(110,91,190,.13) .8px,transparent .8px),
+    radial-gradient(ellipse at 12% 8%,rgba(72,62,139,.24),transparent 42%),
+    radial-gradient(ellipse at 90% 88%,rgba(111,39,78,.18),transparent 38%),
+    linear-gradient(135deg,#101323 0%,#17172d 52%,#211629 100%);
+  background-size:10px 10px,100% 100%,100% 100%,100% 100%;
+  --text:#e9e7ff; --muted:#aaa6c8; --paper:#1c1d33; --paper2:#252440;
+  --line:rgba(177,164,255,.2); --shadow:0 18px 48px rgba(0,0,0,.28);
+}
+body.dark-theme .topbar{background:linear-gradient(105deg,#11172d 0%,#29234f 58%,#48233f 100%);border-bottom:1px solid #6554a2;box-shadow:0 8px 28px rgba(0,0,0,.24)}
+body.dark-theme .brand span:first-child{color:#a99af5}
+body.dark-theme .tiny-btn{background:#343052;color:#eeeaff;border-color:rgba(190,177,255,.28)}
+body.dark-theme .sidebar{background:linear-gradient(160deg,#191b30,#202039 70%,#29213b);border-color:#393451;box-shadow:8px 10px 28px rgba(0,0,0,.2)}
+body.dark-theme .sidebar:before{color:#c85b83}
+body.dark-theme .nav-btn{color:#c5c0e2}
+body.dark-theme .nav-btn span{background:#302d50;color:#c5baff}
+body.dark-theme .nav-btn:hover{background:#30263f}
+body.dark-theme .nav-btn.active{background:linear-gradient(110deg,#494080,#704b9e);color:#fff;box-shadow:3px 4px 0 #302b50}
+body.dark-theme .nav-btn.active span{background:#a99af5;color:#211d3b}
+body.dark-theme .sidebar-bottom{border-color:#393451}
+body.dark-theme .little-note,body.dark-theme .handwritten{color:#e58aaa}
+body.dark-theme .page-heading h2,body.dark-theme .home-section-heading h2,body.dark-theme .home-greeting{color:#f0edff}
+body.dark-theme .eyebrow{color:#e58aaa}
+body.dark-theme .page-subtitle,body.dark-theme .home-intro{color:#aaa6c8}
+body.dark-theme .date-stamp{border-color:#bb5b83;color:#f0a0bb;background:#282039;box-shadow:inset 0 0 0 7px rgba(169,154,245,.1)}
+body.dark-theme .date-stamp strong{color:#f4efff}
+body.dark-theme .home-feature-card{background:linear-gradient(135deg,#222b4c 0%,#3a326c 58%,#572a4d 100%);box-shadow:8px 9px 0 #29243f;border:1px solid rgba(190,177,255,.15)}
+body.dark-theme .home-feature-card:after{color:rgba(180,170,255,.12)}
+body.dark-theme .sticker-label{background:#a99af5;color:#201d39}
+body.dark-theme .feature-scribble,body.dark-theme .feature-doodle{color:#c8bcff}
+body.dark-theme .home-feature-card h2 em{color:#f08cac}
+body.dark-theme .feature-link{border-color:#a99af5;color:#d9d0ff}
+body.dark-theme .polaroid-note{background:#25243a;border-color:#45405f;box-shadow:4px 6px 0 rgba(0,0,0,.24)}
+body.dark-theme .polaroid-art{background:repeating-linear-gradient(135deg,#51457e 0 10px,#39345f 10px 20px);color:#eeeaff}
+body.dark-theme .polaroid-art span,body.dark-theme .polaroid-note small{color:#f08cac}
+body.dark-theme .polaroid-note p{color:#eeeaff}
+body.dark-theme .tiny-manifesto{background:#202c43;border-color:#354866}
+body.dark-theme .tiny-manifesto span{color:#a9c8ff}body.dark-theme .tiny-manifesto p{color:#e0e8ff}body.dark-theme .tiny-manifesto b{color:#f08cac}
+body.dark-theme .home-card{border-color:rgba(190,177,255,.17);box-shadow:0 5px 0 rgba(0,0,0,.2)}
+body.dark-theme .home-card:hover{box-shadow:0 11px 0 rgba(0,0,0,.24)}
+body.dark-theme .card-story{background:linear-gradient(145deg,#29294b,#35335f);color:#e8e3ff}
+body.dark-theme .card-memories{background:linear-gradient(145deg,#48283e,#603148);color:#ffe3ed}
+body.dark-theme .card-screenshots{background:linear-gradient(145deg,#233b56,#2d4c69);color:#e0f1ff}
+body.dark-theme .card-journal{background:linear-gradient(145deg,#3a2b52,#4a3562);color:#f0e3ff}
+body.dark-theme .card-doodle{background:linear-gradient(145deg,#213e49,#2b505b);color:#ddf7ff}
+body.dark-theme .card-chat{background:linear-gradient(145deg,#482b48,#593453);color:#ffe5f6}
+body.dark-theme .home-footer-note{color:#aaa6c8}.home-footer-note span{color:#e58aaa}
+body.dark-theme .story-list{border-left-color:#7565b7}
+body.dark-theme .story-card,body.dark-theme .story-card:nth-child(even),body.dark-theme .story-card:nth-child(odd){background:#202137;border-color:rgba(177,164,255,.2);box-shadow:5px 6px 0 rgba(0,0,0,.2)}
+body.dark-theme .story-card:before{background:#bd5b83;border-color:#292642;color:#fff}
+body.dark-theme .story-card h3{color:#f1edff}body.dark-theme .story-card p{color:#c0bbd7}
+body.dark-theme .auth-card,body.dark-theme .room-card{background:linear-gradient(145deg,#202137,#29243e);border-color:#48405f;box-shadow:10px 11px 0 rgba(0,0,0,.24);color:#eeeaff}
+body.dark-theme .primary-btn{background:linear-gradient(100deg,#6655ad,#a44670);color:#fff}
+body.dark-theme .primary-btn:hover{background:linear-gradient(100deg,#7968c5,#c25780)}
+body.dark-theme .secondary-btn{background:#353052;color:#e8e3ff}
+body.dark-theme .memory-card,body.dark-theme .journal-card,body.dark-theme .character-card,body.dark-theme .screenshot-card{background:#202137;border-color:#403b5b;box-shadow:0 8px 24px rgba(0,0,0,.22);color:#e9e7ff}
+body.dark-theme .screenshots-lock{background:linear-gradient(145deg,#202137,#29243e);border:1px solid #48405f;box-shadow:0 12px 32px rgba(0,0,0,.24)}
+body.dark-theme .lock-illustration{background:#373052;color:#c8bcff}
+body.dark-theme .screenshots-lock h3{color:#f1edff}
+body.dark-theme .lock-message{color:#f08cac!important}
+body.dark-theme .screenshot-image-button img{background:#292943}
+body.dark-theme input,body.dark-theme textarea,body.dark-theme select{border-color:#48415f!important;background:#17182b!important;color:#eeeaff!important}
+body.dark-theme input::placeholder,body.dark-theme textarea::placeholder{color:#8f89aa}
+body.dark-theme input:focus,body.dark-theme textarea:focus,body.dark-theme select:focus{outline:2px solid #8e7ad5!important;border-color:#a99af5!important}
+body.dark-theme .theme-toggle{white-space:nowrap}
+body.dark-theme .page-content,body.dark-theme .content-section{color:#e9e7ff}
+body.dark-theme .modal-content,body.dark-theme .modal-card{background:#202137;color:#eeeaff;border-color:#48405f}
+body.dark-theme .empty-state{background:#202137;color:#aaa6c8;border-color:#403b5b}
+@media(max-width:600px){body.dark-theme .home-feature-card{background:linear-gradient(145deg,#222b4c,#3a326c 62%,#572a4d)}}
 
-            initializeCanvas();
 
-        }
+/* BLUE HOUR — refined, low-glare palette */
+:root{--purple-dark:#293653;--purple:#596b91;--purple-light:#8794b7;--lavender:#c3c9dc;--cream:#eef0f4;--cream-dark:#e0e5ed;--white:#f8f9fb;--text:#293247;--muted:#737d91;--pink:#a9687d;--shadow:0 16px 42px rgba(37,49,73,.10)}
+body:not(.dark-theme){color:#293247;background:radial-gradient(ellipse at 8% 5%,rgba(143,158,190,.20),transparent 34%),radial-gradient(ellipse at 92% 82%,rgba(169,104,125,.10),transparent 32%),#edf0f5}
+body:not(.dark-theme) .topbar{background:linear-gradient(105deg,#34435f,#536482 68%,#765568);border-bottom:1px solid #8995ad}
+body:not(.dark-theme) .sidebar{background:linear-gradient(165deg,#f7f8fa,#e5e9f0);border-color:#d3d9e4}
+body:not(.dark-theme) .nav-btn{color:#4b5870}body:not(.dark-theme) .nav-btn span{background:#dce2ec;color:#536481}body:not(.dark-theme) .nav-btn:hover{background:#e2e7ef}body:not(.dark-theme) .nav-btn.active{background:linear-gradient(110deg,#526583,#71809e);color:#fff;box-shadow:3px 4px 0 #c8cfdb}body:not(.dark-theme) .nav-btn.active span{background:#e8eaf0;color:#485773}
+body:not(.dark-theme) .tiny-btn{background:#eef1f6;color:#43516b;border-color:#cbd3e0}
+body:not(.dark-theme) .page-heading h2,body:not(.dark-theme) .home-section-heading h2,body:not(.dark-theme) .home-greeting{color:#293750}body:not(.dark-theme) .eyebrow,body:not(.dark-theme) .little-note,body:not(.dark-theme) .handwritten{color:#9a5e73}body:not(.dark-theme) .page-subtitle,body:not(.dark-theme) .home-intro{color:#737d91}
+body:not(.dark-theme) .home-feature-card{background:linear-gradient(130deg,#34435f 0%,#4e6082 58%,#765568 100%);border:1px solid rgba(255,255,255,.18);box-shadow:7px 8px 0 #d1d6e0}body:not(.dark-theme) .home-feature-card h2 em,body:not(.dark-theme) .polaroid-art span,body:not(.dark-theme) .polaroid-note small{color:#e5b5c3}body:not(.dark-theme) .sticker-label{background:#d6dcea;color:#34435f}body:not(.dark-theme) .feature-scribble,body:not(.dark-theme) .feature-doodle{color:#d4dbea}body:not(.dark-theme) .feature-link{border-color:#c4ccdc;color:#f4f5f8}
+body:not(.dark-theme) .polaroid-note{background:#f8f8f7;border-color:#d4d9e2;box-shadow:4px 6px 0 #d9dee7}body:not(.dark-theme) .polaroid-art{background:repeating-linear-gradient(135deg,#536482 0 10px,#71809e 10px 20px);color:#f7f8fa}body:not(.dark-theme) .polaroid-note p{color:#46516a}
+body:not(.dark-theme) .tiny-manifesto{background:#e2e8f0;border-color:#cbd4e1}body:not(.dark-theme) .tiny-manifesto span{color:#68799a}body:not(.dark-theme) .tiny-manifesto p{color:#46536d}body:not(.dark-theme) .tiny-manifesto b{color:#9a5e73}
+body:not(.dark-theme) .home-card{border-color:#d7dce6}body:not(.dark-theme) .card-story{background:linear-gradient(145deg,#dfe5ef,#cbd5e5);color:#34435f}body:not(.dark-theme) .card-memories{background:linear-gradient(145deg,#f0e2e6,#e5cfd8);color:#70485a}body:not(.dark-theme) .card-screenshots{background:linear-gradient(145deg,#dce9ef,#c7dce7);color:#36576a}body:not(.dark-theme) .card-journal{background:linear-gradient(145deg,#e7e2ef,#d8d0e4);color:#554969}body:not(.dark-theme) .card-doodle{background:linear-gradient(145deg,#dce9e8,#c8dcda);color:#3f625f}body:not(.dark-theme) .card-chat{background:linear-gradient(145deg,#eee1e8,#e3d0dc);color:#704b60}
+body:not(.dark-theme) .story-list{border-left-color:#8794b7}body:not(.dark-theme) .story-card,body:not(.dark-theme) .story-card:nth-child(even),body:not(.dark-theme) .story-card:nth-child(odd){background:#f8f9fb;border-color:#d7dce6;box-shadow:5px 6px 0 rgba(65,81,111,.10)}body:not(.dark-theme) .story-card:nth-child(even){background:#e8ecf3}body:not(.dark-theme) .story-card:nth-child(odd){background:#f5edf0}body:not(.dark-theme) .story-card:before{background:#a9687d;border-color:#edf0f5;color:#fff}body:not(.dark-theme) .story-card h3{color:#34435f}body:not(.dark-theme) .story-card p{color:#59657b}
+body:not(.dark-theme) .auth-card,body:not(.dark-theme) .room-card{background:linear-gradient(145deg,#fafbfc,#e8ecf3);border-color:#d2d9e4;box-shadow:9px 10px 0 rgba(65,81,111,.12)}body:not(.dark-theme) .primary-btn{background:linear-gradient(100deg,#465a7b,#765568);color:#fff}body:not(.dark-theme) .primary-btn:hover{background:linear-gradient(100deg,#354766,#8a6074)}body:not(.dark-theme) .secondary-btn{background:#dce3ed;color:#3e506e}
+body:not(.dark-theme) .memory-card,body:not(.dark-theme) .journal-card,body:not(.dark-theme) .character-card,body:not(.dark-theme) .screenshot-card{background:#f8f9fb;border-color:#d7dce6;box-shadow:0 8px 24px rgba(43,57,82,.08)}body:not(.dark-theme) .screenshots-lock{background:linear-gradient(145deg,#f8f9fb,#e5eaf1);border-color:#d2d9e4}body:not(.dark-theme) .lock-illustration{background:#dce3ed;color:#526583}body:not(.dark-theme) .screenshots-lock h3{color:#34435f}body:not(.dark-theme) .lock-message{color:#9a5e73!important}
+body:not(.dark-theme) input,body:not(.dark-theme) textarea,body:not(.dark-theme) select{border-color:#cbd3df!important;background:#fafbfc!important;color:#293247!important}body:not(.dark-theme) input:focus,body:not(.dark-theme) textarea:focus,body:not(.dark-theme) select:focus{outline:2px solid #8794b7!important;border-color:#68799a!important}body:not(.dark-theme) .modal-content,body:not(.dark-theme) .modal-card{background:#f8f9fb;color:#293247;border-color:#d2d9e4}
 
-    }
-);
+/* Midnight: layered ink blue, slate, dusty iris and muted berry */
+body.dark-theme{color:#e4e8f0;background-color:#151b29;background-image:radial-gradient(rgba(123,139,174,.075) .7px,transparent .7px),radial-gradient(ellipse at 12% 7%,rgba(65,83,120,.22),transparent 43%),radial-gradient(ellipse at 91% 88%,rgba(117,67,87,.13),transparent 38%),linear-gradient(135deg,#151b29 0%,#1b2232 54%,#251e2b 100%);background-size:12px 12px,100% 100%,100% 100%,100% 100%;--text:#e4e8f0;--muted:#a5afc0;--paper:#222b3c;--paper2:#2a3447;--line:rgba(166,180,207,.17);--shadow:0 18px 48px rgba(4,8,16,.25)}
+body.dark-theme .topbar{background:linear-gradient(105deg,#202c42 0%,#354765 65%,#624455 100%);border-bottom:1px solid #53627c;box-shadow:0 8px 28px rgba(4,8,16,.24)}body.dark-theme .brand span:first-child{color:#c2cce0}body.dark-theme .tiny-btn{background:#303b50;color:#e4e8f0;border-color:#53617a}
+body.dark-theme .sidebar{background:linear-gradient(160deg,#202a3b,#252e40 72%,#302936);border-color:#3b465b}body.dark-theme .sidebar:before{color:#bd8295}body.dark-theme .nav-btn{color:#c0c9d8}body.dark-theme .nav-btn span{background:#303b50;color:#c5cfe0}body.dark-theme .nav-btn:hover{background:#303b4b}body.dark-theme .nav-btn.active{background:linear-gradient(110deg,#4b607f,#68799a);color:#fff;box-shadow:3px 4px 0 #1b2433}body.dark-theme .nav-btn.active span{background:#d8dfeb;color:#3d506e}body.dark-theme .sidebar-bottom{border-color:#3b465b}
+body.dark-theme .little-note,body.dark-theme .handwritten{color:#c58b9d}body.dark-theme .page-heading h2,body.dark-theme .home-section-heading h2,body.dark-theme .home-greeting{color:#edf0f5}body.dark-theme .eyebrow{color:#c58b9d}body.dark-theme .page-subtitle,body.dark-theme .home-intro{color:#a5afc0}
+body.dark-theme .home-feature-card{background:linear-gradient(135deg,#293951 0%,#3d506f 60%,#644354 100%);box-shadow:8px 9px 0 #1b2433;border:1px solid rgba(205,215,231,.12)}body.dark-theme .home-feature-card:after{color:rgba(210,220,236,.08)}body.dark-theme .sticker-label{background:#c4cede;color:#2c3a52}body.dark-theme .feature-scribble,body.dark-theme .feature-doodle{color:#d0d8e7}body.dark-theme .home-feature-card h2 em{color:#e0a9b8}body.dark-theme .feature-link{border-color:#aab8ce;color:#e1e7f0}
+body.dark-theme .polaroid-note{background:#2b3444;border-color:#465267;box-shadow:4px 6px 0 rgba(0,0,0,.2)}body.dark-theme .polaroid-art{background:repeating-linear-gradient(135deg,#4c607f 0 10px,#394a66 10px 20px);color:#edf0f5}body.dark-theme .polaroid-art span,body.dark-theme .polaroid-note small{color:#e0a9b8}body.dark-theme .polaroid-note p{color:#e4e8f0}
+body.dark-theme .tiny-manifesto{background:#27384a;border-color:#40536b}body.dark-theme .tiny-manifesto span{color:#b7c6dc}body.dark-theme .tiny-manifesto p{color:#e0e6ef}body.dark-theme .tiny-manifesto b{color:#d6a0b1}
+body.dark-theme .home-card{border-color:rgba(180,194,216,.15);box-shadow:0 5px 0 rgba(0,0,0,.16)}body.dark-theme .home-card:hover{box-shadow:0 11px 0 rgba(0,0,0,.2)}body.dark-theme .card-story{background:linear-gradient(145deg,#303e56,#3b4b67);color:#e4eaf3}body.dark-theme .card-memories{background:linear-gradient(145deg,#493340,#5a3d4d);color:#f0e3e8}body.dark-theme .card-screenshots{background:linear-gradient(145deg,#2e4658,#38556a);color:#e0edf3}body.dark-theme .card-journal{background:linear-gradient(145deg,#3c394f,#4b465e);color:#eae6f1}body.dark-theme .card-doodle{background:linear-gradient(145deg,#30494a,#3c5b5a);color:#e0eeeb}body.dark-theme .card-chat{background:linear-gradient(145deg,#493746,#5b4354);color:#f0e5ed}
+body.dark-theme .home-footer-note{color:#a5afc0}body.dark-theme .home-footer-note span{color:#c58b9d}body.dark-theme .story-list{border-left-color:#788ba9}body.dark-theme .story-card,body.dark-theme .story-card:nth-child(even),body.dark-theme .story-card:nth-child(odd){background:#252f40;border-color:rgba(176,190,212,.16);box-shadow:5px 6px 0 rgba(0,0,0,.16)}body.dark-theme .story-card:before{background:#a96f83;border-color:#202a3b;color:#fff}body.dark-theme .story-card h3{color:#e9edf4}body.dark-theme .story-card p{color:#bbc5d4}
+body.dark-theme .auth-card,body.dark-theme .room-card{background:linear-gradient(145deg,#252f40,#2c3445);border-color:#465267;box-shadow:9px 10px 0 rgba(0,0,0,.2);color:#e4e8f0}body.dark-theme .primary-btn{background:linear-gradient(100deg,#536987,#80566a);color:#fff}body.dark-theme .primary-btn:hover{background:linear-gradient(100deg,#637b9e,#95667b)}body.dark-theme .secondary-btn{background:#364257;color:#e2e8f1}
+body.dark-theme .memory-card,body.dark-theme .journal-card,body.dark-theme .character-card,body.dark-theme .screenshot-card{background:#252f40;border-color:#435066;box-shadow:0 8px 24px rgba(0,0,0,.18);color:#e4e8f0}body.dark-theme .screenshots-lock{background:linear-gradient(145deg,#252f40,#2c3445);border:1px solid #465267;box-shadow:0 12px 32px rgba(0,0,0,.2)}body.dark-theme .lock-illustration{background:#39475d;color:#c8d2e2}body.dark-theme .screenshots-lock h3{color:#edf0f5}body.dark-theme .lock-message{color:#d6a0b1!important}body.dark-theme .screenshot-image-button img{background:#2b3547}
+body.dark-theme input,body.dark-theme textarea,body.dark-theme select{border-color:#4b5870!important;background:#1d2636!important;color:#e4e8f0!important}body.dark-theme input::placeholder,body.dark-theme textarea::placeholder{color:#929eb1}body.dark-theme input:focus,body.dark-theme textarea:focus,body.dark-theme select:focus{outline:2px solid #8293b1!important;border-color:#aab8ce!important}body.dark-theme .page-content,body.dark-theme .content-section{color:#e4e8f0}body.dark-theme .modal-content,body.dark-theme .modal-card{background:#252f40;color:#e4e8f0;border-color:#465267}body.dark-theme .empty-state{background:#252f40;color:#a5afc0;border-color:#435066}
 
-/* Close the enlarged photo with Escape */
-document.addEventListener("keydown", function photoLightboxEscapeHandler(event) {
-    if (event.key === "Escape") {
-        const overlay = document.getElementById("photoLightbox");
-        if (overlay && !overlay.classList.contains("hidden")) {
-            closePhotoLightbox();
-        }
-    }
-});
 
 
 /* =========================================================
-   DARK / LIGHT APPEARANCE
+   DARK ACADEMIA — OUR LITTLE STORY
+   Espresso • walnut • parchment • antique gold
+   App layout stays atmospheric; writing surfaces become paper.
 ========================================================= */
-function applySavedTheme() {
-    const savedTheme = localStorage.getItem("ourStoryTheme") || "dark";
-    document.body.classList.toggle("dark-theme", savedTheme === "dark");
-    const toggle = document.getElementById("themeToggle");
-    if (toggle) {
-        toggle.textContent = savedTheme === "dark" ? "☀ Light mode" : "☾ Dark mode";
-        toggle.setAttribute("aria-label", savedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode");
-    }
+
+:root {
+  --da-espresso: #211d1a;
+  --da-walnut: #302720;
+  --da-leather: #403329;
+  --da-brown: #66513e;
+  --da-gold: #b69b78;
+  --da-paper: #eee5d5;
+  --da-paper-deep: #d8cbb8;
+  --da-ink: #30251e;
+  --da-muted: #c1b29f;
+  --da-forest: #3f5145;
+  --da-burgundy: #543b40;
+  --da-line: #78644e;
 }
 
-function toggleTheme() {
-    const makeDark = !document.body.classList.contains("dark-theme");
-    document.body.classList.toggle("dark-theme", makeDark);
-    localStorage.setItem("ourStoryTheme", makeDark ? "dark" : "light");
-    const toggle = document.getElementById("themeToggle");
-    if (toggle) {
-        toggle.textContent = makeDark ? "☀ Light mode" : "☾ Dark mode";
-        toggle.setAttribute("aria-label", makeDark ? "Switch to light mode" : "Switch to dark mode");
-    }
+/* The shared room has one consistent dark-academia atmosphere. */
+body,
+body:not(.dark-theme),
+body.dark-theme {
+  color: var(--da-paper);
+  background-color: var(--da-espresso);
+  background-image:
+    radial-gradient(ellipse at 12% 8%, rgba(102,81,62,.22), transparent 42%),
+    radial-gradient(ellipse at 88% 88%, rgba(63,81,69,.13), transparent 38%),
+    linear-gradient(135deg, #211d1a 0%, #29231e 58%, #302720 100%);
+  --text: var(--da-paper);
+  --muted: var(--da-muted);
+  --paper: var(--da-walnut);
+  --paper2: var(--da-leather);
+  --line: rgba(216,203,184,.18);
+  --shadow: 0 18px 48px rgba(0,0,0,.28);
 }
 
-document.addEventListener("DOMContentLoaded", applySavedTheme);
+/* Top bar and navigation */
+.topbar,
+body:not(.dark-theme) .topbar,
+body.dark-theme .topbar {
+  background: linear-gradient(105deg, #211d1a 0%, #403329 62%, #543b40 100%);
+  border-bottom: 1px solid #78644e;
+  box-shadow: 0 8px 28px rgba(0,0,0,.25);
+}
+.brand span:first-child { color: var(--da-gold) !important; }
+
+.sidebar,
+body:not(.dark-theme) .sidebar,
+body.dark-theme .sidebar {
+  background: linear-gradient(160deg, #302720, #393027 72%, #3b2c2d);
+  border-color: #66513e;
+}
+.sidebar:before { color: #b69b78 !important; }
+.sidebar-bottom { border-color: #66513e !important; }
+
+.nav-btn,
+body:not(.dark-theme) .nav-btn,
+body.dark-theme .nav-btn {
+  color: #d8cbb8;
+}
+.nav-btn span,
+body:not(.dark-theme) .nav-btn span,
+body.dark-theme .nav-btn span {
+  background: #493b30;
+  color: #d8cbb8;
+}
+.nav-btn:hover,
+body:not(.dark-theme) .nav-btn:hover,
+body.dark-theme .nav-btn:hover {
+  background: #493b30;
+}
+.nav-btn.active,
+body:not(.dark-theme) .nav-btn.active,
+body.dark-theme .nav-btn.active {
+  background: linear-gradient(110deg, #66513e, #543b40);
+  color: #fff8ec;
+  box-shadow: 3px 4px 0 #1a1714;
+}
+.nav-btn.active span,
+body:not(.dark-theme) .nav-btn.active span,
+body.dark-theme .nav-btn.active span {
+  background: #d8cbb8;
+  color: #30251e;
+}
+
+.tiny-btn,
+body:not(.dark-theme) .tiny-btn,
+body.dark-theme .tiny-btn {
+  background: #403329;
+  color: #eee5d5;
+  border-color: #78644e;
+}
+
+/* Main headings and supporting copy */
+.page-heading h2,
+.home-section-heading h2,
+.home-greeting,
+body:not(.dark-theme) .page-heading h2,
+body.dark-theme .page-heading h2,
+body:not(.dark-theme) .home-section-heading h2,
+body.dark-theme .home-section-heading h2,
+body:not(.dark-theme) .home-greeting,
+body.dark-theme .home-greeting {
+  color: #eee5d5;
+}
+.eyebrow,
+.little-note,
+.handwritten {
+  color: #c5a77e !important;
+}
+.page-subtitle,
+.home-intro,
+.home-footer-note {
+  color: #c1b29f !important;
+}
+
+/* Feature panel and home cards */
+.home-feature-card,
+body:not(.dark-theme) .home-feature-card,
+body.dark-theme .home-feature-card {
+  background: linear-gradient(135deg, #403329 0%, #514235 58%, #543b40 100%);
+  border: 1px solid rgba(216,203,184,.2);
+  box-shadow: 8px 9px 0 #191613;
+}
+.home-feature-card h2,
+.home-feature-card p { color: #eee5d5; }
+.home-feature-card h2 em,
+.polaroid-art span,
+.polaroid-note small { color: #d0b18a !important; }
+.feature-scribble,
+.feature-doodle { color: #d8cbb8 !important; }
+.feature-link { border-color: #b69b78 !important; color: #eee5d5 !important; }
+.sticker-label { background: #d8cbb8 !important; color: #30251e !important; }
+
+.home-card,
+body:not(.dark-theme) .home-card,
+body.dark-theme .home-card {
+  border-color: rgba(216,203,184,.2);
+  box-shadow: 0 5px 0 rgba(0,0,0,.2);
+}
+.card-story { background: linear-gradient(145deg,#39463c,#3f5145) !important; color:#f0eadf !important; }
+.card-memories { background: linear-gradient(145deg,#543b40,#68494d) !important; color:#f4e8df !important; }
+.card-screenshots { background: linear-gradient(145deg,#4a4638,#66513e) !important; color:#f3eadb !important; }
+.card-journal { background: linear-gradient(145deg,#66513e,#80694d) !important; color:#fff3df !important; }
+.card-doodle { background: linear-gradient(145deg,#35483d,#49604d) !important; color:#edf0e5 !important; }
+.card-chat { background: linear-gradient(145deg,#49343a,#60434a) !important; color:#f4e8e5 !important; }
+
+/* Timeline cards */
+.story-list { border-left-color: #b69b78 !important; }
+.story-card,
+.story-card:nth-child(even),
+.story-card:nth-child(odd),
+body:not(.dark-theme) .story-card,
+body.dark-theme .story-card {
+  background: #393027 !important;
+  border: 1px solid #66513e !important;
+  box-shadow: 5px 6px 0 rgba(0,0,0,.2) !important;
+}
+.story-card:before { background: #b69b78 !important; border-color: #211d1a !important; color: #30251e !important; }
+.story-card h3 { color: #eee5d5 !important; }
+.story-card p { color: #c1b29f !important; }
+
+/* Memories and character profiles remain dark, like leather-bound albums. */
+.memory-card,
+.character-card,
+.screenshot-card,
+body:not(.dark-theme) .memory-card,
+body:not(.dark-theme) .character-card,
+body:not(.dark-theme) .screenshot-card,
+body.dark-theme .memory-card,
+body.dark-theme .character-card,
+body.dark-theme .screenshot-card {
+  background: #393027 !important;
+  border: 1px solid #66513e !important;
+  color: #eee5d5 !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.22) !important;
+}
+.memory-info h3,
+.character-info h3 { color: #eee5d5 !important; }
+.memory-info p,
+.character-info p,
+.screenshot-card-caption p { color: #d0c2ad !important; }
+.memory-date,
+.journal-date,
+.character-role,
+.screenshot-card time { color: #c5a77e !important; }
+.memory-timeline-dot { background: #b69b78 !important; }
+.memory-no-photo,
+.character-placeholder { background: #514235 !important; color: #d8cbb8 !important; }
+
+/* Journal entries are the special parchment pages. */
+.journal-card {
+  background:
+    linear-gradient(rgba(238,229,213,.96), rgba(238,229,213,.96)),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(102,81,62,.10) 31px 32px) !important;
+  color: #30251e !important;
+  border: 1px solid #b69b78 !important;
+  border-radius: 5px !important;
+  box-shadow: 5px 7px 0 rgba(0,0,0,.24), inset 0 0 35px rgba(102,81,62,.08) !important;
+}
+.journal-card h3 { color: #543b40 !important; }
+.journal-card .journal-content { color: #30251e !important; }
+.journal-card .journal-date { color: #80694d !important; }
+.journal-card p,
+.journal-card div { }
+.journal-card .action-btn { color: #543b40 !important; border-color: #b69b78 !important; }
+
+/* Chat panel */
+.chat-box,
+.messages {
+  background: #302720 !important;
+  border-color: #66513e !important;
+}
+.chat-box { border: 1px solid #66513e !important; }
+.messages { color: #eee5d5 !important; }
+.chat-input { border-color: #66513e !important; }
+.chat-input input { background: #211d1a !important; color: #eee5d5 !important; }
+.message-bubble,
+.chat-message,
+.received-message {
+  background: #493b30 !important;
+  color: #eee5d5 !important;
+}
+.sent-message { background: #543b40 !important; color: #fff0e8 !important; }
+
+/* Screenshots lock, doodle tools, and utility panels */
+.screenshots-lock,
+body:not(.dark-theme) .screenshots-lock,
+body.dark-theme .screenshots-lock {
+  background: linear-gradient(145deg,#393027,#302720) !important;
+  border: 1px solid #66513e !important;
+  color: #eee5d5 !important;
+}
+.screenshots-lock h3 { color: #eee5d5 !important; }
+.lock-message { color: #d0b18a !important; }
+.lock-illustration { background: #514235 !important; color: #d8cbb8 !important; }
+.canvas-wrapper { background: #eee5d5 !important; border-color: #b69b78 !important; }
+.tool-btn { background: #403329 !important; color: #eee5d5 !important; border-color: #78644e !important; }
+.tool-btn.active { background: #b69b78 !important; color: #30251e !important; }
+
+/* Authentication and room cards */
+.auth-card,
+.room-card,
+body:not(.dark-theme) .auth-card,
+body:not(.dark-theme) .room-card,
+body.dark-theme .auth-card,
+body.dark-theme .room-card {
+  background: linear-gradient(145deg,#393027,#302720) !important;
+  border: 1px solid #66513e !important;
+  color: #eee5d5 !important;
+  box-shadow: 9px 10px 0 rgba(0,0,0,.25) !important;
+}
+.auth-card h1,
+.room-card h1 { color: #eee5d5 !important; }
+.auth-card .subtitle,
+.room-card p { color: #c1b29f !important; }
+.auth-tabs { background: #211d1a !important; }
+.auth-tab { color: #c1b29f !important; }
+.auth-tab.active { background: #66513e !important; color: #fff3df !important; }
+
+/* Inputs, dialogs, buttons and readable states */
+input,
+textarea,
+select,
+body:not(.dark-theme) input,
+body:not(.dark-theme) textarea,
+body:not(.dark-theme) select,
+body.dark-theme input,
+body.dark-theme textarea,
+body.dark-theme select {
+  background: #211d1a !important;
+  color: #eee5d5 !important;
+  border-color: #78644e !important;
+}
+input::placeholder,
+textarea::placeholder { color: #b6a58f !important; opacity: 1; }
+input:focus,
+textarea:focus,
+select:focus { outline: 2px solid #b69b78 !important; border-color: #b69b78 !important; }
+.primary-btn,
+body:not(.dark-theme) .primary-btn,
+body.dark-theme .primary-btn {
+  background: linear-gradient(100deg,#80694d,#66513e) !important;
+  color: #fff8ec !important;
+  border: 1px solid #b69b78 !important;
+}
+.primary-btn:hover { background: linear-gradient(100deg,#927a5b,#765b45) !important; }
+.secondary-btn { background: #493b30 !important; color: #eee5d5 !important; border: 1px solid #78644e !important; }
+.action-btn { color: #d8cbb8 !important; border-color: #78644e !important; }
+.action-btn.delete { color: #e2a8a2 !important; }
+.modal-content,
+.modal-card,
+body:not(.dark-theme) .modal-content,
+body:not(.dark-theme) .modal-card,
+body.dark-theme .modal-content,
+body.dark-theme .modal-card {
+  background: #302720 !important;
+  color: #eee5d5 !important;
+  border-color: #66513e !important;
+}
+.modal-content h1,
+.modal-content h2,
+.modal-content h3,
+.modal-card h1,
+.modal-card h2,
+.modal-card h3 { color: #eee5d5 !important; }
+.empty-state { background: #393027 !important; color: #c1b29f !important; border-color: #66513e !important; }
+.empty-state h3 { color: #eee5d5 !important; }
+.divider, hr { border-color: #66513e !important; }
+a { color: #d0b18a; }
 
 
 
-/* Runtime contrast guard: fixes dynamically-created cards and edit forms.
-   Inline important styles ensure older theme selectors cannot override them. */
-(function installContrastGuard() {
-  function forceStyle(el, styles) {
-    if (!el) return;
-    for (const [property, value] of Object.entries(styles)) {
-      el.style.setProperty(property, value, "important");
+/* =========================================================
+   DARK ACADEMIA — HIGH CONTRAST TEXT READABILITY PATCH
+   Brighter body copy and headings across every section.
+========================================================= */
+
+:root {
+  --da-text-bright: #FFF8EC;
+  --da-text-body: #E8DDCC;
+  --da-text-muted: #D0C2AD;
+  --da-text-accent: #E0C69E;
+}
+
+/* General page copy */
+body,
+body p,
+body li,
+body label,
+body small,
+body span,
+body div,
+body:not(.dark-theme),
+body.dark-theme {
+  color: var(--da-text-body);
+}
+
+.page-heading h1,
+.page-heading h2,
+.page-heading h3,
+h1, h2, h3, h4, h5, h6,
+.home-greeting,
+.home-section-heading,
+.section-title,
+.modal-content h1,
+.modal-content h2,
+.modal-content h3,
+.modal-card h1,
+.modal-card h2,
+.modal-card h3 {
+  color: var(--da-text-bright) !important;
+}
+
+/* Descriptions, dates, metadata, helper copy */
+p,
+li,
+.subtitle,
+.description,
+.page-subtitle,
+.home-intro,
+.meta,
+.muted,
+.timestamp,
+.memory-date,
+.journal-date,
+.story-date,
+.character-description,
+.screenshot-date,
+.helper-text,
+.form-hint,
+small,
+figcaption {
+  color: var(--da-text-muted) !important;
+}
+
+/* Main content cards */
+.memory-card,
+.memory-card *,
+.character-card,
+.character-card *,
+.screenshot-card,
+.screenshot-card *,
+.story-card,
+.story-card *,
+.auth-card,
+.auth-card *,
+.room-card,
+.room-card *,
+.home-card,
+.home-card * {
+  color: var(--da-text-body);
+}
+
+.memory-card h1, .memory-card h2, .memory-card h3, .memory-card h4,
+.character-card h1, .character-card h2, .character-card h3, .character-card h4,
+.screenshot-card h1, .screenshot-card h2, .screenshot-card h3, .screenshot-card h4,
+.story-card h1, .story-card h2, .story-card h3, .story-card h4,
+.auth-card h1, .auth-card h2, .auth-card h3,
+.room-card h1, .room-card h2, .room-card h3 {
+  color: var(--da-text-bright) !important;
+}
+
+.memory-card p, .character-card p, .screenshot-card p,
+.story-card p, .auth-card p, .room-card p {
+  color: var(--da-text-muted) !important;
+}
+
+/* Navigation and controls */
+.nav-btn,
+.nav-btn span,
+.tiny-btn,
+.action-btn,
+.secondary-btn,
+.tool-btn {
+  color: #F4EBDD !important;
+}
+
+.nav-btn.active,
+.nav-btn.active span {
+  color: #FFF8EC !important;
+}
+
+a {
+  color: #E0C69E !important;
+}
+
+/* Form text */
+input, textarea, select, option {
+  color: #FFF8EC !important;
+}
+input::placeholder,
+textarea::placeholder {
+  color: #CFC0AA !important;
+  opacity: 1 !important;
+}
+label {
+  color: #F0E5D5 !important;
+}
+
+/* Chat copy */
+.chat-box,
+.messages,
+.chat-message,
+.message-bubble,
+.received-message,
+.sent-message {
+  color: #FFF8EC !important;
+}
+.chat-message p,
+.message-bubble p,
+.received-message p,
+.sent-message p {
+  color: inherit !important;
+}
+
+/* Journal remains parchment, with dark readable ink */
+.journal-card,
+.journal-card * {
+  color: #30251E !important;
+}
+.journal-card h1,
+.journal-card h2,
+.journal-card h3,
+.journal-card h4 {
+  color: #543B40 !important;
+}
+.journal-card .journal-date,
+.journal-card .journal-meta {
+  color: #80694D !important;
+}
+
+/* Dialogs and empty states */
+.modal-content,
+.modal-card,
+.empty-state {
+  color: #E8DDCC !important;
+}
+.modal-content p,
+.modal-card p,
+.empty-state p {
+  color: #D0C2AD !important;
+}
+.modal-content label,
+.modal-card label {
+  color: #F0E5D5 !important;
+}
+
+/* Accent words and decorative labels */
+.eyebrow,
+.little-note,
+.handwritten,
+.memory-date,
+.journal-date,
+.story-date {
+  color: var(--da-text-accent) !important;
+}
+
+
+
+/* =========================================================
+   CHARACTER TAB — DARK ACADEMIA CONTRAST FIX
+========================================================= */
+.character-card,
+.character-profile,
+.character-item,
+.profile-card,
+.profile-item,
+.character,
+.character-box,
+#characters .card,
+#characters .character-card,
+#characters .profile-card,
+.characters .card,
+.characters .character-card,
+.characters .profile-card {
+    background: #393027 !important;
+    color: #EEE5D5 !important;
+    border-color: #78644E !important;
+}
+
+.character-card *,
+.character-profile *,
+.character-item *,
+.profile-card *,
+.profile-item *,
+.character *,
+.character-box *,
+#characters .card *,
+#characters .character-card *,
+#characters .profile-card *,
+.characters .card *,
+.characters .character-card *,
+.characters .profile-card * {
+    color: #EEE5D5 !important;
+    -webkit-text-fill-color: #EEE5D5 !important;
+}
+
+.character-card h1, .character-card h2, .character-card h3,
+.character-profile h1, .character-profile h2, .character-profile h3,
+.profile-card h1, .profile-card h2, .profile-card h3,
+#characters h1, #characters h2, #characters h3,
+.characters h1, .characters h2, .characters h3 {
+    color: #FFF8EC !important;
+    -webkit-text-fill-color: #FFF8EC !important;
+}
+
+.character-card p, .character-profile p, .profile-card p,
+.character-item p, .profile-item p, #characters p, .characters p {
+    color: #E0D4C2 !important;
+    -webkit-text-fill-color: #E0D4C2 !important;
+}
+
+#characters input, #characters textarea, #characters select,
+.characters input, .characters textarea, .characters select,
+.character-card input, .character-card textarea, .character-card select,
+.profile-card input, .profile-card textarea, .profile-card select {
+    background: #EEE5D5 !important;
+    color: #302720 !important;
+    -webkit-text-fill-color: #302720 !important;
+    border-color: #A88E6C !important;
+}
+
+#characters input::placeholder, #characters textarea::placeholder,
+.characters input::placeholder, .characters textarea::placeholder {
+    color: #756653 !important;
+    -webkit-text-fill-color: #756653 !important;
+}
+
+
+
+/* FORGOT PASSWORD + PASSWORD RESET */
+.forgot-password-link {
+    display: block;
+    width: 100%;
+    margin: 7px 0 0;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--purple-dark);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.forgot-password-link:hover,
+.text-btn:hover {
+    color: var(--purple);
+}
+#resetPasswordScreen .auth-card {
+    max-width: 440px;
+}
+#resetPasswordScreen .subtitle {
+    margin-bottom: 22px;
+}
+#resetPasswordMessage {
+    overflow-wrap: anywhere;
+}
+@media (max-width: 520px) {
+    .auth-card {
+        padding: 30px 22px;
     }
-  }
-
-  function applyContrastFixes(root = document) {
-    root.querySelectorAll?.("button.action-btn, .card-actions > button, article .card-actions > button").forEach((button) => {
-      const isDelete = button.classList.contains("delete") ||
-        /delete|remove/i.test(button.textContent || "");
-      forceStyle(button, {
-        "background-color": isDelete ? "#704047" : "#49372d",
-        "background-image": "none",
-        "color": isDelete ? "#fff4ec" : "#fff4e4",
-        "-webkit-text-fill-color": isDelete ? "#fff4ec" : "#fff4e4",
-        "border": isDelete ? "1px solid #c18a80" : "1px solid #c2a16f",
-        "text-shadow": "none",
-        "opacity": "1"
-      });
-      button.querySelectorAll("*").forEach(child => forceStyle(child, {
-        "color": isDelete ? "#fff4ec" : "#fff4e4",
-        "-webkit-text-fill-color": isDelete ? "#fff4ec" : "#fff4e4"
-      }));
-    });
-
-    const modal = document.querySelector(".modal");
-    const content = document.querySelector("#modalContent");
-    if (modal) forceStyle(modal, {
-      "background-color": "#f3e8d5",
-      "color": "#30251f",
-      "border-color": "#c8b18f"
-    });
-    if (content) {
-      forceStyle(content, {
-        "background-color": "#f3e8d5",
-        "color": "#30251f",
-        "border-color": "#c8b18f"
-      });
-      content.querySelectorAll("h1,h2,h3,label,p,.form-label").forEach(el =>
-        forceStyle(el, {"color":"#30251f", "-webkit-text-fill-color":"#30251f"})
-      );
-      content.querySelectorAll('input:not([type="checkbox"]):not([type="radio"]),textarea,select').forEach(el =>
-        forceStyle(el, {
-          "background-color":"#fffaf1",
-          "color":"#30251f",
-          "-webkit-text-fill-color":"#30251f",
-          "border":"1px solid #bda887",
-          "caret-color":"#30251f"
-        })
-      );
-      content.querySelectorAll("input::placeholder,textarea::placeholder");
-      content.querySelectorAll("button.primary-btn").forEach(el =>
-        forceStyle(el, {
-          "background-color":"#49372d",
-          "color":"#fff4e4",
-          "-webkit-text-fill-color":"#fff4e4"
-        })
-      );
+    .auth-card h1 {
+        font-size: 29px;
     }
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => applyContrastFixes(), { once: true });
-  } else {
-    applyContrastFixes();
-  }
-
-  const observer = new MutationObserver(() => applyContrastFixes());
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-})();
+    .forgot-password-link {
+        min-height: 42px;
+    }
+}
